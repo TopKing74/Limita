@@ -13,3 +13,4 @@ C:\Users\Mr. Adham\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Applica
 C:\Users\Mr. Adham\Limita\src\Limita.Application\obj\Debug\net9.0\refint\Limita.Application.dll
 C:\Users\Mr. Adham\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.pdb
 C:\Users\Mr. Adham\Limita\src\Limita.Application\obj\Debug\net9.0\ref\Limita.Application.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.sourcelink.json

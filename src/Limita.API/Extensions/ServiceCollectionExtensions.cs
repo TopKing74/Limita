@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Server=(localdb)\\mssqllocaldb;Database=LimitaDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found in configuration.");
 
         services.AddDbContext<LimitaDbContext>(options =>
             options.UseSqlServer(connectionString, sqlOptions =>

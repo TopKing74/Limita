@@ -179,3 +179,4 @@ C:\Users\Mr. Adham\Limita\src\Limita.API\obj\Debug\net9.0\refint\Limita.API.dll
 C:\Users\Mr. Adham\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.pdb
 C:\Users\Mr. Adham\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.genruntimeconfig.cache
 C:\Users\Mr. Adham\Limita\src\Limita.API\obj\Debug\net9.0\ref\Limita.API.dll
+C:\Users\Mr. Adham\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.sourcelink.json
