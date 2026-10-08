@@ -1,0 +1,25 @@
+using Limita.Application.Features.Accounts.Models;
+
+namespace Limita.Application.Features.Accounts.Services;
+
+public interface IAccountService
+{
+    Task<AccountDetailsDto> CreateSecondaryAccountAsync(
+        string userId,
+        CreateAccountRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AccountSummaryDto>> GetUserAccountsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<AccountDetailsDto?> GetAccountByIdAsync(
+        string userId,
+        Guid accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<AccountBalanceDto?> GetAccountBalanceAsync(
+        string userId,
+        Guid accountId,
+        CancellationToken cancellationToken = default);
+}

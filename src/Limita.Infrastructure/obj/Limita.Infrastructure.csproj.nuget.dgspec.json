@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj": {}
+    "D:\\LimitaProject\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Application\\Limita.Application.csproj": {
+    "D:\\LimitaProject\\Limita\\src\\Limita.Application\\Limita.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Application\\Limita.Application.csproj",
+        "projectUniqueName": "D:\\LimitaProject\\Limita\\src\\Limita.Application\\Limita.Application.csproj",
         "projectName": "Limita.Application",
-        "projectPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Application\\Limita.Application.csproj",
-        "packagesPath": "C:\\Users\\Mr. Adham\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Application\\obj\\",
+        "projectPath": "D:\\LimitaProject\\Limita\\src\\Limita.Application\\Limita.Application.csproj",
+        "packagesPath": "C:\\Users\\mosa\\.nuget\\packages\\",
+        "outputPath": "D:\\LimitaProject\\Limita\\src\\Limita.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Mr. Adham\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\mosa\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,15 +26,15 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
+            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj": {
-                "projectPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj"
+              "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj": {
+                "projectPath": "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj"
               }
             }
           }
@@ -49,10 +49,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net9.0": {
+          "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
             "FluentValidation": {
@@ -84,24 +85,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.318/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj": {
+    "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj",
+        "projectUniqueName": "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj",
         "projectName": "Limita.Domain",
-        "projectPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj",
-        "packagesPath": "C:\\Users\\Mr. Adham\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\obj\\",
+        "projectPath": "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj",
+        "packagesPath": "C:\\Users\\mosa\\.nuget\\packages\\",
+        "outputPath": "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Mr. Adham\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\mosa\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -110,11 +111,11 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
+            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {}
           }
@@ -129,10 +130,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net9.0": {
+          "framework": "net9.0",
           "targetAlias": "net9.0",
           "imports": [
             "net461",
@@ -153,24 +155,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.318/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj": {
+    "D:\\LimitaProject\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj",
+        "projectUniqueName": "D:\\LimitaProject\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj",
         "projectName": "Limita.Infrastructure",
-        "projectPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj",
-        "packagesPath": "C:\\Users\\Mr. Adham\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Infrastructure\\obj\\",
+        "projectPath": "D:\\LimitaProject\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\mosa\\.nuget\\packages\\",
+        "outputPath": "D:\\LimitaProject\\Limita\\src\\Limita.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Mr. Adham\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\mosa\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -179,18 +181,18 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
+            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Application\\Limita.Application.csproj": {
-                "projectPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Application\\Limita.Application.csproj"
+              "D:\\LimitaProject\\Limita\\src\\Limita.Application\\Limita.Application.csproj": {
+                "projectPath": "D:\\LimitaProject\\Limita\\src\\Limita.Application\\Limita.Application.csproj"
               },
-              "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj": {
-                "projectPath": "C:\\Users\\Mr. Adham\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj"
+              "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj": {
+                "projectPath": "D:\\LimitaProject\\Limita\\src\\Limita.Domain\\Limita.Domain.csproj"
               }
             }
           }
@@ -205,10 +207,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net9.0": {
+          "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
@@ -239,7 +242,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.318/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

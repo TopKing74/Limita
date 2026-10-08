@@ -1,0 +1,23 @@
+using FluentValidation;
+using Limita.Application.Features.Accounts.Models;
+
+namespace Limita.Application.Features.Accounts.Validators;
+
+public class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequest>
+{
+    private static readonly HashSet<string> SupportedCurrencies =
+        new(StringComparer.OrdinalIgnoreCase) { "EGP", "USD", "EUR" };
+
+    public CreateAccountRequestValidator()
+    {
+        RuleFor(x => x.Type)
+            .IsInEnum()
+            .WithMessage("Account type must be Checking or Savings.");
+
+        RuleFor(x => x.Currency)
+            .NotEmpty().WithMessage("Currency is required.")
+            .Length(3).WithMessage("Currency must be a 3-letter ISO 4217 code.")
+            .Must(c => SupportedCurrencies.Contains(c.Trim()))
+            .WithMessage("Supported currencies are: EGP, USD, EUR.");
+    }
+}
