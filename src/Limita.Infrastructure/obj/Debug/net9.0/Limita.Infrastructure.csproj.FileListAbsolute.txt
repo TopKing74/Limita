@@ -1,0 +1,17 @@
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Infrastructure.deps.json
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Infrastructure.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Infrastructure.pdb
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Application.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Domain.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Application.pdb
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Domain.pdb
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.AssemblyInfo.cs
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.I.54B63C93.Up2Date
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\refint\Limita.Infrastructure.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.pdb
+C:\Users\Mr. Adham\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\ref\Limita.Infrastructure.dll
