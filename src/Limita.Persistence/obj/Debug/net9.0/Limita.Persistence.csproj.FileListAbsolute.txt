@@ -15,3 +15,4 @@ C:\Users\Mr. Adham\Limita\src\Limita.Persistence\obj\Debug\net9.0\Limita.Persist
 C:\Users\Mr. Adham\Limita\src\Limita.Persistence\obj\Debug\net9.0\refint\Limita.Persistence.dll
 C:\Users\Mr. Adham\Limita\src\Limita.Persistence\obj\Debug\net9.0\Limita.Persistence.pdb
 C:\Users\Mr. Adham\Limita\src\Limita.Persistence\obj\Debug\net9.0\ref\Limita.Persistence.dll
+C:\Users\Mr. Adham\Limita\src\Limita.Persistence\obj\Debug\net9.0\Limita.Persistence.sourcelink.json
