@@ -149,71 +149,121 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 6. Bill Providers & Pending Bills
-        if (!await context.BillProviders.AnyAsync())
+        // 6. Bill Providers
+        var demoBillProviders = new List<BillProvider>
         {
-            var telecomProvider = new BillProvider
+            new()
             {
+                Id = Guid.Parse("a11c1001-b111-4000-8000-000000000001"),
                 Name = "Orange Telecom Egypt",
                 Category = BillCategory.Telecom,
                 IsActive = true
-            };
-
-            var electricityProvider = new BillProvider
+            },
+            new()
             {
+                Id = Guid.Parse("a11c1001-b111-4000-8000-000000000002"),
                 Name = "South Cairo Electricity Distribution",
                 Category = BillCategory.Electricity,
                 IsActive = true
-            };
-
-            var waterProvider = new BillProvider
+            },
+            new()
             {
+                Id = Guid.Parse("a11c1001-b111-4000-8000-000000000003"),
                 Name = "Cairo Water Company",
                 Category = BillCategory.Water,
                 IsActive = true
-            };
-
-            var internetProvider = new BillProvider
+            },
+            new()
             {
+                Id = Guid.Parse("a11c1001-b111-4000-8000-000000000004"),
                 Name = "WE Internet Egypt",
                 Category = BillCategory.Internet,
                 IsActive = true
-            };
-
-            await context.BillProviders.AddRangeAsync(telecomProvider, electricityProvider, waterProvider, internetProvider);
-            await context.SaveChangesAsync();
-
-            // 7. Pending Bills
-            var bills = new List<Bill>
+            },
+            new()
             {
-                new()
+                Id = Guid.Parse("a11c1001-b111-4000-8000-000000000005"),
+                Name = "Egypt Gas Company",
+                Category = BillCategory.Gas,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.Parse("a11c1001-b111-4000-8000-000000000006"),
+                Name = "Egyptian Tax Authority",
+                Category = BillCategory.Government,
+                IsActive = true
+            }
+        };
+
+        var existingProviderIds = await context.BillProviders
+            .Select(p => p.Id)
+            .ToListAsync();
+        var existingProviderNames = await context.BillProviders
+            .Select(p => p.Name)
+            .ToListAsync();
+
+        var providersToInsert = demoBillProviders
+            .Where(p => !existingProviderIds.Contains(p.Id) && !existingProviderNames.Contains(p.Name))
+            .ToList();
+
+        if (providersToInsert.Count > 0)
+        {
+            await context.BillProviders.AddRangeAsync(providersToInsert);
+            await context.SaveChangesAsync();
+        }
+
+        // 7. Pending Bills
+        if (!await context.Bills.AnyAsync())
+        {
+            var demoProviderNames = demoBillProviders.Select(p => p.Name).ToList();
+            var providerIdsByName = await context.BillProviders
+                .Where(p => demoProviderNames.Contains(p.Name))
+                .ToDictionaryAsync(p => p.Name, p => p.Id);
+
+            var bills = new List<Bill>();
+
+            if (providerIdsByName.TryGetValue("South Cairo Electricity Distribution", out var electricityId))
+            {
+                bills.Add(new Bill
                 {
-                    ProviderId = electricityProvider.Id,
+                    ProviderId = electricityId,
                     BillingNumber = "ELEC-2026-98124",
                     Amount = 850.50m,
                     DueDate = DateTime.UtcNow.AddDays(14),
                     Status = BillStatus.Pending
-                },
-                new()
+                });
+            }
+
+            if (providerIdsByName.TryGetValue("WE Internet Egypt", out var internetId))
+            {
+                bills.Add(new Bill
                 {
-                    ProviderId = internetProvider.Id,
+                    ProviderId = internetId,
                     BillingNumber = "INT-2026-55412",
                     Amount = 320.00m,
                     DueDate = DateTime.UtcNow.AddDays(7),
                     Status = BillStatus.Pending
-                },
-                new()
+                });
+            }
+
+            if (providerIdsByName.TryGetValue("Cairo Water Company", out var waterId))
+            {
+                bills.Add(new Bill
                 {
-                    ProviderId = waterProvider.Id,
+                    ProviderId = waterId,
                     BillingNumber = "WTR-2026-11234",
                     Amount = 145.75m,
                     DueDate = DateTime.UtcNow.AddDays(21),
                     Status = BillStatus.Pending
-                }
-            };
+                });
+            }
 
-            await context.Bills.AddRangeAsync(bills);
-            await context.SaveChangesAsync();
+            if (bills.Count > 0)
+            {
+                await context.Bills.AddRangeAsync(bills);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

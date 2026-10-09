@@ -167,6 +167,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<Limita.Application.Features.BillProviders.Services.IBillProviderService, Limita.Application.Features.BillProviders.Services.BillProviderService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
