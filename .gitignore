@@ -1,0 +1,11 @@
+﻿# .NET build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio and IDE files
+.vs/
+*.csproj.user
+*.suo
+
+# User-specific settings
+.idea/
