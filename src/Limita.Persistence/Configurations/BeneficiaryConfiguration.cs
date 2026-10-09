@@ -32,5 +32,8 @@ public class BeneficiaryConfiguration : IEntityTypeConfiguration<Beneficiary>
             .WithMany(u => u.Beneficiaries)
             .HasForeignKey(b => b.OwnerUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(b => new { b.OwnerUserId, b.AccountNumber })
+            .IsUnique();
     }
 }

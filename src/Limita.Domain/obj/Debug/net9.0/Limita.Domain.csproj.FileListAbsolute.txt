@@ -22,3 +22,15 @@ D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.dll
 D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\refint\Limita.Domain.dll
 D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.pdb
 D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\ref\Limita.Domain.dll
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\bin\Debug\net9.0\Limita.Domain.deps.json
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\bin\Debug\net9.0\Limita.Domain.dll
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\bin\Debug\net9.0\Limita.Domain.pdb
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.AssemblyInfoInputs.cache
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.AssemblyInfo.cs
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.csproj.CoreCompileInputs.cache
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.sourcelink.json
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.dll
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\refint\Limita.Domain.dll
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.pdb
+D:\Carrer\Our Project\CodePlus\src\Limita.Domain\obj\Debug\net9.0\ref\Limita.Domain.dll

@@ -17,6 +17,9 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasIndex(t => t.ReferenceNumber)
             .IsUnique();
 
+        // High-performance composite index for account statement and history queries ordered by date
+        builder.HasIndex(t => new { t.AccountId, t.CreatedAt });
+
         builder.Property(t => t.Amount)
             .HasPrecision(18, 2);
 

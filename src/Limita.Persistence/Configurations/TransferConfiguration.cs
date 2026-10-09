@@ -10,6 +10,9 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer>
     {
         builder.HasKey(t => t.Id);
 
+        builder.Property(t => t.Amount)
+            .HasPrecision(18, 2);
+
         builder.HasOne(t => t.Transaction)
             .WithMany()
             .HasForeignKey(t => t.TransactionId)
