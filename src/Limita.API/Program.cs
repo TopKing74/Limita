@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Limita.API.Extensions;
 using Limita.API.Middlewares;
@@ -7,7 +8,11 @@ using Limita.Persistence.Seed;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Add Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // 2. Add Limita Core, Persistence, Infrastructure, Identity, and Security Services
 builder.Services.AddLimitaServices(builder.Configuration);

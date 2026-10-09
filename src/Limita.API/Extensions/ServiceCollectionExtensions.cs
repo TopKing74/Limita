@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
+using Limita.Application.Features.Accounts.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Identity;
@@ -113,8 +114,18 @@ public static class ServiceCollectionExtensions
                 ClockSkew = TimeSpan.Zero
             };
 
+            options.MapInboundClaims = false;
             options.Events = new JwtBearerEvents
             {
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices
+                        .GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("JwtBearer");
+                    logger.LogWarning(context.Exception,
+                        "JWT authentication failed: {Message}", context.Exception.Message);
+                    return Task.CompletedTask;
+                },
                 OnChallenge = async context =>
                 {
                     context.HandleResponse();
@@ -155,6 +166,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IAccountService, AccountService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
@@ -192,27 +204,28 @@ public static class ServiceCollectionExtensions
                 }
             });
 
-            var securityScheme = new OpenApiSecurityScheme
+            // Http + Bearer: Swagger UI auto-prefixes "Bearer " — paste accessToken only.
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
-                Description = "JWT Authorization header using the Bearer scheme. \r\n\r\nEnter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer eyJhbGciOi...\"",
+                Description = "Paste the JWT accessToken only (from /api/Auth/login). Do not type the word Bearer.",
                 In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
+                Type = SecuritySchemeType.Http,
                 Scheme = "Bearer",
-                BearerFormat = "JWT",
-                Reference = new OpenApiReference
-                {
-                    Id = JwtBearerDefaults.AuthenticationScheme,
-                    Type = ReferenceType.SecurityScheme
-                }
-            };
-
-            c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
+                BearerFormat = "JWT"
+            });
 
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
-                    securityScheme,
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
                     Array.Empty<string>()
                 }
             });

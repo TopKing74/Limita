@@ -17,6 +17,9 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.HasIndex(a => a.AccountNumber)
             .IsUnique();
 
+        builder.Property(a => a.Type)
+            .IsRequired();
+
         builder.Property(a => a.Currency)
             .HasMaxLength(3)
             .IsRequired();

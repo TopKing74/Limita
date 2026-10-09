@@ -9,6 +9,7 @@ public class Account : BaseEntity
     public ApplicationUser? User { get; set; }
 
     public string AccountNumber { get; set; } = string.Empty;
+    public AccountType Type { get; set; } = AccountType.Checking;
     public string Currency { get; set; } = "EGP";
     public decimal Balance { get; set; }
     public AccountStatus Status { get; set; } = AccountStatus.Active;

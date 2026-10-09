@@ -130,6 +130,7 @@ public class AuthController : BaseApiController
         {
             UserId = user.Id,
             AccountNumber = $"EG{DateTime.UtcNow.Ticks.ToString()[^14..]}",
+            Type = AccountType.Checking,
             Currency = "EGP",
             Balance = 1000.00m,
             DailyLimit = 50000.00m,

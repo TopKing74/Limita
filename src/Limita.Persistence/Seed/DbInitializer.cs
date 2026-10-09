@@ -97,6 +97,7 @@ public static class DbInitializer
             {
                 UserId = demoUser.Id,
                 AccountNumber = "EG10002000300040",
+                Type = AccountType.Checking,
                 Currency = "EGP",
                 Balance = 100000.00m,
                 DailyLimit = 50000.00m,
@@ -108,6 +109,7 @@ public static class DbInitializer
             {
                 UserId = demoUser.Id,
                 AccountNumber = "US10002000300099",
+                Type = AccountType.Savings,
                 Currency = "USD",
                 Balance = 5000.00m,
                 DailyLimit = 2000.00m,
