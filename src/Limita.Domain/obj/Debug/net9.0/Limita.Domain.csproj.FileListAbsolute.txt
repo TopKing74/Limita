@@ -22,15 +22,3 @@ D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.dll
 D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\refint\Limita.Domain.dll
 D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.pdb
 D:\LimitaProject\Limita\src\Limita.Domain\obj\Debug\net9.0\ref\Limita.Domain.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\bin\Debug\net9.0\Limita.Domain.deps.json
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\bin\Debug\net9.0\Limita.Domain.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\bin\Debug\net9.0\Limita.Domain.pdb
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.GeneratedMSBuildEditorConfig.editorconfig
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.AssemblyInfoInputs.cache
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.AssemblyInfo.cs
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.csproj.CoreCompileInputs.cache
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.sourcelink.json
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\refint\Limita.Domain.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\Limita.Domain.pdb
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Domain\obj\Debug\net9.0\ref\Limita.Domain.dll

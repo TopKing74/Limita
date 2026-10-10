@@ -21,21 +21,3 @@ public class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequ
             .WithMessage("Supported currencies are: EGP, USD, EUR.");
     }
 }
-
-public class WithdrawalRequestValidator : AbstractValidator<WithdrawalRequest>
-{
-    public WithdrawalRequestValidator()
-    {
-        RuleFor(x => x.Amount)
-            .GreaterThan(0).WithMessage("Withdrawal amount must be greater than zero.");
-    }
-}
-
-public class RechargeRequestValidator : AbstractValidator<RechargeRequest>
-{
-    public RechargeRequestValidator()
-    {
-        RuleFor(x => x.Amount)
-            .GreaterThan(0).WithMessage("Recharge amount must be greater than zero.");
-    }
-}

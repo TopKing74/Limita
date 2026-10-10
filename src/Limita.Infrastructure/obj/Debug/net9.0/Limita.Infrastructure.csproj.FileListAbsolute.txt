@@ -34,21 +34,3 @@ D:\LimitaProject\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infras
 D:\LimitaProject\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\refint\Limita.Infrastructure.dll
 D:\LimitaProject\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.pdb
 D:\LimitaProject\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\ref\Limita.Infrastructure.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Infrastructure.deps.json
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Infrastructure.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Infrastructure.pdb
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Application.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Domain.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Application.pdb
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\bin\Debug\net9.0\Limita.Domain.pdb
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.csproj.AssemblyReference.cache
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.AssemblyInfoInputs.cache
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.AssemblyInfo.cs
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.csproj.CoreCompileInputs.cache
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.sourcelink.json
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.I.54B63C93.Up2Date
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\refint\Limita.Infrastructure.dll
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\Limita.Infrastructure.pdb
-D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Infrastructure\obj\Debug\net9.0\ref\Limita.Infrastructure.dll
