@@ -78,4 +78,68 @@ public class BillService : IBillService
             b.CreatedAt
         ));
     }
+
+    public async Task<BillPaymentResponseDto> PayBillAsync(string userId, Guid billId, PayBillRequest request, CancellationToken cancellationToken = default)
+    {
+        var bill = await _context.Bills
+            .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId, cancellationToken);
+
+        if (bill == null)
+            throw new KeyNotFoundException("Bill not found or you do not have access to it.");
+
+        if (bill.Status == BillStatus.Paid)
+            throw new InvalidOperationException("The bill is already paid.");
+
+        var account = await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
+
+        if (account == null)
+            throw new KeyNotFoundException("Account not found or you do not have access to it.");
+
+        if (account.Status != AccountStatus.Active)
+            throw new InvalidOperationException("Cannot pay from an inactive or blocked account.");
+
+        if (account.Balance < bill.Amount)
+            throw new InvalidOperationException("Insufficient available balance.");
+
+        // Debit the account
+        account.Balance -= bill.Amount;
+
+        // Create transaction
+        var transaction = new Transaction
+        {
+            AccountId = account.Id,
+            ReferenceNumber = $"BPY-{Guid.NewGuid():N}"[..16].ToUpperInvariant(),
+            Type = TransactionType.BillPayment,
+            Amount = bill.Amount,
+            Currency = account.Currency,
+            Status = TransactionStatus.Completed,
+            Description = $"Payment for bill {bill.BillingNumber}",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.Transactions.AddAsync(transaction, cancellationToken);
+
+        // Update bill status
+        bill.Status = BillStatus.Paid;
+        bill.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            // Atomically save changes
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidOperationException("The account balance or bill status was modified by another transaction. Please try again.");
+        }
+
+        return new BillPaymentResponseDto(
+            bill.Id,
+            transaction.Id,
+            transaction.ReferenceNumber,
+            bill.Amount,
+            DateTime.UtcNow
+        );
+    }
 }

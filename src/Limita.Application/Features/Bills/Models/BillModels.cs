@@ -19,3 +19,13 @@ public record BillDto(
     BillStatus Status,
     DateTime CreatedAt
 );
+
+public record PayBillRequest(Guid AccountId);
+
+public record BillPaymentResponseDto(
+    Guid BillId,
+    Guid TransactionId,
+    string ReferenceNumber,
+    decimal AmountPaid,
+    DateTime PaymentDate
+);
