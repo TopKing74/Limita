@@ -18,6 +18,26 @@ public class BankCardConfiguration : IEntityTypeConfiguration<BankCard>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(c => c.Type).IsRequired();
+        builder.Property(c => c.Form).IsRequired();
+        builder.Property(c => c.Status).IsRequired();
+
+        builder.Property(c => c.DailyAtmLimit)
+            .HasPrecision(18, 2);
+
+        builder.Property(c => c.DailyPosLimit)
+            .HasPrecision(18, 2);
+
+        builder.Property(c => c.PinHash)
+            .HasMaxLength(500);
+
+        builder.Property(c => c.BlockReason)
+            .HasMaxLength(250);
+
+        builder.Ignore(c => c.IsPinSet);
+
+        builder.HasIndex(c => c.AccountId);
+
         builder.HasOne(c => c.Account)
             .WithMany(a => a.Cards)
             .HasForeignKey(c => c.AccountId)

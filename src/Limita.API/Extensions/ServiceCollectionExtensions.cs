@@ -9,9 +9,11 @@ using Microsoft.OpenApi.Models;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Services;
+using Limita.Application.Features.Cards.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Identity;
+using Limita.Infrastructure.Security;
 using Limita.Persistence.Context;
 
 namespace Limita.API.Extensions;
@@ -167,6 +169,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<ICardService, CardService>();
+        services.AddSingleton<ICardPinHasher, CardPinHasher>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
