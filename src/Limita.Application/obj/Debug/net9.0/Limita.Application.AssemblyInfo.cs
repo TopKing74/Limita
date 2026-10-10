@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Limita.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed70c161efdc071f43fe93552be03e71aa49b265")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e1555b1105c486c8301ace2dc72a29ffb342a94")]
 [assembly: System.Reflection.AssemblyProductAttribute("Limita.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Limita.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

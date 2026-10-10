@@ -15,17 +15,20 @@ public class AccountsController : BaseApiController
     private readonly ICurrentUserService _currentUserService;
     private readonly IValidator<CreateAccountRequest> _createAccountValidator;
     private readonly IValidator<WithdrawalRequest> _withdrawalRequestValidator;
+    private readonly IValidator<RechargeRequest> _rechargeRequestValidator;
 
     public AccountsController(
         IAccountService accountService,
         ICurrentUserService currentUserService,
         IValidator<CreateAccountRequest> createAccountValidator,
-        IValidator<WithdrawalRequest> withdrawalRequestValidator)
+        IValidator<WithdrawalRequest> withdrawalRequestValidator,
+        IValidator<RechargeRequest> rechargeRequestValidator)
     {
         _accountService = accountService;
         _currentUserService = currentUserService;
         _createAccountValidator = createAccountValidator;
         _withdrawalRequestValidator = withdrawalRequestValidator;
+        _rechargeRequestValidator = rechargeRequestValidator;
     }
 
     /// <summary>
@@ -161,6 +164,35 @@ public class AccountsController : BaseApiController
         return Ok(ApiResponse<TransactionDto>.Ok(transaction, "Withdrawal successful."));
     }
 
+    /// <summary>
+    /// Recharge funds to an owned account.
+    /// </summary>
+    [HttpPost("{id:guid}/recharge")]
+    [ProducesResponseType(typeof(ApiResponse<TransactionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<TransactionDto>>> Recharge(
+        Guid id,
+        [FromBody] RechargeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var validationResult = await _rechargeRequestValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var transaction = await _accountService.RechargeAsync(userId, id, request, cancellationToken);
+        return Ok(ApiResponse<TransactionDto>.Ok(transaction, "Recharge successful."));
+    }
 
     private string? GetRequiredUserId() =>
         string.IsNullOrWhiteSpace(_currentUserService.UserId) ? null : _currentUserService.UserId;

@@ -135,4 +135,91 @@ public class AccountServiceTests
         await action.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Cannot withdraw from an inactive or blocked account.");
     }
+
+    [Fact]
+    public async Task RechargeAsync_ShouldIncreaseBalanceAndRecordTransaction_WhenSuccessful()
+    {
+        // Arrange
+        var userId = "user-1";
+        var accountId = Guid.NewGuid();
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Balance = 1000m,
+            Currency = "USD",
+            Status = AccountStatus.Active
+        };
+
+        var dbAccounts = new List<Account> { account };
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(dbAccounts);
+
+        var dbTransactions = new List<Transaction>();
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(dbTransactions);
+
+        var request = new RechargeRequest(200m);
+
+        // Act
+        var result = await _accountService.RechargeAsync(userId, accountId, request);
+
+        // Assert
+        account.Balance.Should().Be(1200m);
+        
+        _contextMock.Verify(c => c.Transactions.AddAsync(It.Is<Transaction>(t => 
+            t.AccountId == accountId &&
+            t.Amount == 200m &&
+            t.Type == TransactionType.Deposit &&
+            t.Status == TransactionStatus.Completed &&
+            t.Currency == "USD"
+        ), It.IsAny<CancellationToken>()), Times.Once);
+
+        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        result.Should().NotBeNull();
+        result.Amount.Should().Be(200m);
+        result.Type.Should().Be(TransactionType.Deposit);
+    }
+
+    [Fact]
+    public async Task RechargeAsync_ShouldThrowKeyNotFoundException_WhenAccountNotFound()
+    {
+        // Arrange
+        var dbAccounts = new List<Account>();
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(dbAccounts);
+
+        var request = new RechargeRequest(200m);
+
+        // Act
+        var action = async () => await _accountService.RechargeAsync("user-1", Guid.NewGuid(), request);
+
+        // Assert
+        await action.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task RechargeAsync_ShouldThrowInvalidOperationException_WhenAccountIsInactive()
+    {
+        // Arrange
+        var userId = "user-1";
+        var accountId = Guid.NewGuid();
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Balance = 1000m,
+            Status = AccountStatus.Suspended // Inactive status
+        };
+
+        var dbAccounts = new List<Account> { account };
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(dbAccounts);
+
+        var request = new RechargeRequest(200m);
+
+        // Act
+        var action = async () => await _accountService.RechargeAsync(userId, accountId, request);
+
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Cannot recharge an inactive or blocked account.");
+    }
 }

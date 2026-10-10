@@ -215,4 +215,59 @@ public class AccountService : IAccountService
             transaction.Status,
             transaction.CreatedAt);
     }
+
+    public async Task<TransactionDto> RechargeAsync(
+        string userId,
+        Guid accountId,
+        RechargeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var account = await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId, cancellationToken);
+
+        if (account is null)
+        {
+            throw new KeyNotFoundException("Account not found or you do not have access to it.");
+        }
+
+        if (account.Status != AccountStatus.Active)
+        {
+            throw new InvalidOperationException("Cannot recharge an inactive or blocked account.");
+        }
+
+        account.Balance += request.Amount;
+
+        var transaction = new Transaction
+        {
+            AccountId = accountId,
+            ReferenceNumber = $"DEP-{Guid.NewGuid():N}"[..16].ToUpperInvariant(),
+            Type = TransactionType.Deposit,
+            Amount = request.Amount,
+            Currency = account.Currency,
+            Status = TransactionStatus.Completed,
+            Description = "Account recharge",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.Transactions.AddAsync(transaction, cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidOperationException("The account balance was modified by another transaction. Please try again.");
+        }
+
+        return new TransactionDto(
+            transaction.Id,
+            transaction.AccountId,
+            transaction.ReferenceNumber,
+            transaction.Type,
+            transaction.Amount,
+            transaction.Currency,
+            transaction.Status,
+            transaction.CreatedAt);
+    }
 }

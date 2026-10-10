@@ -30,3 +30,12 @@ public class WithdrawalRequestValidator : AbstractValidator<WithdrawalRequest>
             .GreaterThan(0).WithMessage("Withdrawal amount must be greater than zero.");
     }
 }
+
+public class RechargeRequestValidator : AbstractValidator<RechargeRequest>
+{
+    public RechargeRequestValidator()
+    {
+        RuleFor(x => x.Amount)
+            .GreaterThan(0).WithMessage("Recharge amount must be greater than zero.");
+    }
+}

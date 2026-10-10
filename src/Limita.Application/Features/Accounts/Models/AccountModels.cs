@@ -37,6 +37,8 @@ public record AccountBalanceDto(
 
 public record WithdrawalRequest(decimal Amount);
 
+public record RechargeRequest(decimal Amount);
+
 public record TransactionDto(
     Guid Id,
     Guid AccountId,

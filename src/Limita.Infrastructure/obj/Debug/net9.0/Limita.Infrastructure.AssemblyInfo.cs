@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Limita.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+285005c8f8e7c394967ece52bf4803aca3a30e2f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e1555b1105c486c8301ace2dc72a29ffb342a94")]
 [assembly: System.Reflection.AssemblyProductAttribute("Limita.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Limita.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
