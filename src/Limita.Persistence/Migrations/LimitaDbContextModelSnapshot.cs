@@ -285,9 +285,15 @@ namespace Limita.Persistence.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProviderId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Bills");
                 });
@@ -732,7 +738,15 @@ namespace Limita.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Limita.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("Bills")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Provider");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Limita.Domain.Entities.MobileRecharge", b =>
@@ -869,6 +883,8 @@ namespace Limita.Persistence.Migrations
                     b.Navigation("Accounts");
 
                     b.Navigation("Beneficiaries");
+
+                    b.Navigation("Bills");
 
                     b.Navigation("Notifications");
                 });

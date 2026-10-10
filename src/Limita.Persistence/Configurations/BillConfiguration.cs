@@ -21,5 +21,10 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
             .WithMany(p => p.Bills)
             .HasForeignKey(b => b.ProviderId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(b => b.User)
+            .WithMany(u => u.Bills)
+            .HasForeignKey(b => b.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
