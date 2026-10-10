@@ -15,9 +15,10 @@ public class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequ
             .WithMessage("Account type must be Checking or Savings.");
 
         RuleFor(x => x.Currency)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Currency is required.")
             .Length(3).WithMessage("Currency must be a 3-letter ISO 4217 code.")
-            .Must(c => SupportedCurrencies.Contains(c.Trim()))
+            .Must(c => !string.IsNullOrWhiteSpace(c) && SupportedCurrencies.Contains(c.Trim().ToUpper()))
             .WithMessage("Supported currencies are: EGP, USD, EUR.");
     }
 }

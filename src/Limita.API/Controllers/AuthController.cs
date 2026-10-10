@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Auth.Models;
+using Limita.Application.Features.Auth.Services;
 using Limita.Domain.Entities;
 using Limita.Domain.Enums;
 
@@ -19,6 +20,8 @@ public class AuthController : BaseApiController
     private readonly ICurrentUserService _currentUserService;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<RegisterRequest> _registerValidator;
+    private readonly IAuthService _authService;
+    private readonly IValidator<LogoutRequest> _logoutValidator;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
@@ -27,7 +30,9 @@ public class AuthController : BaseApiController
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
         IValidator<LoginRequest> loginValidator,
-        IValidator<RegisterRequest> registerValidator)
+        IValidator<RegisterRequest> registerValidator,
+        IAuthService authService,
+        IValidator<LogoutRequest> logoutValidator)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -36,6 +41,8 @@ public class AuthController : BaseApiController
         _currentUserService = currentUserService;
         _loginValidator = loginValidator;
         _registerValidator = registerValidator;
+        _authService = authService;
+        _logoutValidator = logoutValidator;
     }
 
     [HttpPost("login")]
@@ -204,6 +211,32 @@ public class AuthController : BaseApiController
             roles);
 
         return Ok(ApiResponse<AuthResponse>.Ok(authResponse, "Token refreshed successfully."));
+    }
+
+    /// <summary>
+    /// Invalidate and revoke the user's refresh token (logout).
+    /// </summary>
+    [HttpPost("logout")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse>> Logout(
+        [FromBody] LogoutRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _logoutValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var succeeded = await _authService.LogoutAsync(request.RefreshToken, cancellationToken);
+        if (!succeeded)
+        {
+            return BadRequest(ApiResponse.Fail("Invalid or not found refresh token."));
+        }
+
+        return Ok(ApiResponse.Ok("Logged out successfully."));
     }
 
     [Authorize]

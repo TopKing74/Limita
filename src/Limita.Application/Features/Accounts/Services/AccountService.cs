@@ -8,6 +8,7 @@ namespace Limita.Application.Features.Accounts.Services;
 
 public class AccountService : IAccountService
 {
+    private static int _sequence;
     private readonly IApplicationDbContext _context;
 
     public AccountService(IApplicationDbContext context)
@@ -20,7 +21,9 @@ public class AccountService : IAccountService
         CreateAccountRequest request,
         CancellationToken cancellationToken = default)
     {
-        var currency = request.Currency.Trim().ToUpperInvariant();
+        var currency = string.IsNullOrWhiteSpace(request.Currency)
+            ? "EGP"
+            : request.Currency.Trim().ToUpperInvariant();
         var accountNumber = await GenerateUniqueAccountNumberAsync(currency, cancellationToken);
 
         var (dailyLimit, monthlyLimit) = GetDefaultLimits(request.Type, currency);
@@ -39,7 +42,16 @@ public class AccountService : IAccountService
         };
 
         await _context.Accounts.AddAsync(account, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsAccountNumberUniqueViolation(ex))
+        {
+            throw new InvalidOperationException(
+                "An account with this account number already exists. Please try again.", ex);
+        }
 
         return MapToDetails(account);
     }
@@ -113,7 +125,12 @@ public class AccountService : IAccountService
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
-            var candidate = $"{prefix}{DateTime.UtcNow.Ticks.ToString()[^14..]}";
+            // Combine high-resolution timestamp, monotonic sequence counter, and random entropy to prevent concurrent collisions
+            var seq = (Interlocked.Increment(ref _sequence) & 0x7FFFFFFF) % 10000;
+            var randomPart = Random.Shared.Next(100, 1000);
+            var timestampPart = DateTime.UtcNow.Ticks.ToString()[^7..];
+            var candidate = $"{prefix}{timestampPart}{seq:D4}{randomPart:D3}";
+
             var exists = await _context.Accounts
                 .AnyAsync(a => a.AccountNumber == candidate, cancellationToken);
 
@@ -122,10 +139,29 @@ public class AccountService : IAccountService
                 return candidate;
             }
 
-            await Task.Delay(1, cancellationToken);
+            await Task.Delay(10, cancellationToken);
         }
 
         return $"{prefix}{Guid.NewGuid():N}"[..16].ToUpperInvariant();
+    }
+
+    private static bool IsAccountNumberUniqueViolation(DbUpdateException ex)
+    {
+        var details = $"{ex.Message} {ex.InnerException?.Message}";
+
+        if (details.Contains("IX_Accounts_AccountNumber", StringComparison.OrdinalIgnoreCase)
+            || details.Contains("AccountNumber", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if ((details.Contains("2601") || details.Contains("2627"))
+            && ex.Entries.Any(e => e.Entity is Account))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static (decimal DailyLimit, decimal MonthlyLimit) GetDefaultLimits(
