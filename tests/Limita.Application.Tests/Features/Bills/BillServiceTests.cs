@@ -127,4 +127,97 @@ public class BillServiceTests
         result.First().Amount.Should().Be(200m); 
         result.Last().Amount.Should().Be(100m);
     }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldPayBillAndCreateTransaction_WhenRequestIsValid()
+    {
+        var userId = "user-1";
+        var billId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+
+        var bill = new Bill { Id = billId, UserId = userId, Amount = 100m, Status = BillStatus.Pending, BillingNumber = "B-1" };
+        var account = new Account { Id = accountId, UserId = userId, Balance = 500m, Status = AccountStatus.Active, Currency = "EGP" };
+
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(new List<Transaction>());
+
+        var request = new PayBillRequest(accountId);
+
+        var result = await _billService.PayBillAsync(userId, billId, request);
+
+        account.Balance.Should().Be(400m);
+        bill.Status.Should().Be(BillStatus.Paid);
+
+        _contextMock.Verify(c => c.Transactions.AddAsync(It.Is<Transaction>(t => 
+            t.AccountId == accountId && t.Amount == 100m && t.Type == TransactionType.BillPayment), It.IsAny<CancellationToken>()), Times.Once);
+        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        result.Should().NotBeNull();
+        result.AmountPaid.Should().Be(100m);
+        result.BillId.Should().Be(billId);
+    }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldThrowKeyNotFoundException_WhenBillNotFound()
+    {
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill>());
+
+        var action = async () => await _billService.PayBillAsync("user-1", Guid.NewGuid(), new PayBillRequest(Guid.NewGuid()));
+
+        await action.Should().ThrowAsync<KeyNotFoundException>().WithMessage("*Bill not found*");
+    }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldThrowInvalidOperationException_WhenBillAlreadyPaid()
+    {
+        var bill = new Bill { Id = Guid.NewGuid(), UserId = "user-1", Status = BillStatus.Paid };
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+
+        var action = async () => await _billService.PayBillAsync("user-1", bill.Id, new PayBillRequest(Guid.NewGuid()));
+
+        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already paid*");
+    }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldThrowKeyNotFoundException_WhenAccountNotFound()
+    {
+        var bill = new Bill { Id = Guid.NewGuid(), UserId = "user-1", Status = BillStatus.Pending };
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account>());
+
+        var action = async () => await _billService.PayBillAsync("user-1", bill.Id, new PayBillRequest(Guid.NewGuid()));
+
+        await action.Should().ThrowAsync<KeyNotFoundException>().WithMessage("*Account not found*");
+    }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldThrowInvalidOperationException_WhenAccountInactive()
+    {
+        var accountId = Guid.NewGuid();
+        var bill = new Bill { Id = Guid.NewGuid(), UserId = "user-1", Status = BillStatus.Pending };
+        var account = new Account { Id = accountId, UserId = "user-1", Status = AccountStatus.Frozen };
+        
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+
+        var action = async () => await _billService.PayBillAsync("user-1", bill.Id, new PayBillRequest(accountId));
+
+        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*inactive or blocked*");
+    }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldThrowInvalidOperationException_WhenInsufficientBalance()
+    {
+        var accountId = Guid.NewGuid();
+        var bill = new Bill { Id = Guid.NewGuid(), UserId = "user-1", Amount = 1000m, Status = BillStatus.Pending };
+        var account = new Account { Id = accountId, UserId = "user-1", Balance = 500m, Status = AccountStatus.Active };
+        
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+
+        var action = async () => await _billService.PayBillAsync("user-1", bill.Id, new PayBillRequest(accountId));
+
+        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Insufficient*");
+    }
 }
