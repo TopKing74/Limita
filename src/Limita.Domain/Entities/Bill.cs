@@ -15,4 +15,5 @@ public class Bill : BaseEntity
     public decimal Amount { get; set; }
     public DateTime DueDate { get; set; }
     public BillStatus Status { get; set; } = BillStatus.Pending;
+    public byte[] RowVersion { get; set; } = [];
 }

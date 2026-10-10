@@ -162,8 +162,19 @@ public class TransactionService : ITransactionService
             .Select(a => new { a.Id, a.Currency })
             .ToListAsync(cancellationToken);
 
-        var primaryCurrency = userAccounts.FirstOrDefault()?.Currency ?? "EGP";
         var userAccountIds = userAccounts.Select(a => a.Id).ToList();
+
+        // 2. Validate accountId filter if supplied: verify ownership or reject
+        if (accountId.HasValue && !userAccountIds.Contains(accountId.Value))
+        {
+            throw new KeyNotFoundException($"Account '{accountId.Value}' was not found or you do not have access to it.");
+        }
+
+        var primaryAccount = accountId.HasValue
+            ? userAccounts.FirstOrDefault(a => a.Id == accountId.Value)
+            : userAccounts.FirstOrDefault();
+
+        var primaryCurrency = primaryAccount?.Currency ?? "EGP";
 
         if (userAccountIds.Count == 0)
         {
@@ -173,61 +184,91 @@ public class TransactionService : ITransactionService
                 NetCashFlow: 0m,
                 TotalTransactionsCount: 0,
                 Currency: primaryCurrency,
-                Breakdown: Array.Empty<TransactionCategoryBreakdownDto>());
+                Breakdown: Array.Empty<TransactionCategoryBreakdownDto>(),
+                Currencies: Array.Empty<CurrencySummaryDto>());
         }
 
-        // 2. Base query for completed transactions
+        // 3. Base query for completed transactions
         var query = _context.Transactions
             .AsNoTracking()
             .Where(t => userAccountIds.Contains(t.AccountId) && t.Status == TransactionStatus.Completed);
 
-        if (accountId.HasValue && userAccountIds.Contains(accountId.Value))
+        if (accountId.HasValue)
         {
             query = query.Where(t => t.AccountId == accountId.Value);
         }
 
         var completedTransactions = await query
-            .Select(t => new { t.Type, t.Amount })
+            .Select(t => new { t.Type, t.Amount, t.Currency })
             .ToListAsync(cancellationToken);
 
-        // 3. Classify inflows vs outflows
-        decimal totalInflow = 0m;
-        decimal totalOutflow = 0m;
-
-        foreach (var tx in completedTransactions)
-        {
-            switch (tx.Type)
-            {
-                case TransactionType.Deposit:
-                case TransactionType.TransferIn:
-                    totalInflow += tx.Amount;
-                    break;
-                case TransactionType.Withdrawal:
-                case TransactionType.TransferOut:
-                case TransactionType.BillPayment:
-                case TransactionType.MobileRecharge:
-                    totalOutflow += tx.Amount;
-                    break;
-            }
-        }
-
-        // 4. Compute categorized breakdown
-        var breakdown = completedTransactions
-            .GroupBy(t => t.Type)
-            .Select(g => new TransactionCategoryBreakdownDto(
-                Type: g.Key,
-                CategoryName: g.Key.ToString(),
-                TotalAmount: g.Sum(x => x.Amount),
-                TransactionCount: g.Count()))
-            .OrderByDescending(b => b.TotalAmount)
+        // 4. Compute summaries grouped strictly by currency code to avoid cross-currency aggregation
+        var currencyGroups = completedTransactions
+            .GroupBy(t => string.IsNullOrWhiteSpace(t.Currency) ? primaryCurrency : t.Currency)
             .ToList();
 
+        var byCurrencyList = new List<CurrencySummaryDto>();
+
+        foreach (var group in currencyGroups)
+        {
+            var currencyCode = group.Key;
+            decimal inflow = 0m;
+            decimal outflow = 0m;
+
+            foreach (var tx in group)
+            {
+                switch (tx.Type)
+                {
+                    case TransactionType.Deposit:
+                    case TransactionType.TransferIn:
+                        inflow += tx.Amount;
+                        break;
+                    case TransactionType.Withdrawal:
+                    case TransactionType.TransferOut:
+                    case TransactionType.BillPayment:
+                    case TransactionType.MobileRecharge:
+                        outflow += tx.Amount;
+                        break;
+                }
+            }
+
+            var categoryBreakdown = group
+                .GroupBy(t => t.Type)
+                .Select(g => new TransactionCategoryBreakdownDto(
+                    Type: g.Key,
+                    CategoryName: g.Key.ToString(),
+                    TotalAmount: g.Sum(x => x.Amount),
+                    TransactionCount: g.Count()))
+                .OrderByDescending(b => b.TotalAmount)
+                .ToList();
+
+            byCurrencyList.Add(new CurrencySummaryDto(
+                Currency: currencyCode,
+                TotalInflow: inflow,
+                TotalOutflow: outflow,
+                NetCashFlow: inflow - outflow,
+                TotalTransactionsCount: group.Count(),
+                Breakdown: categoryBreakdown));
+        }
+
+        // 5. Select primary currency summary for top-level figures (strictly avoiding multi-currency summation)
+        var primarySummary = byCurrencyList.FirstOrDefault(c => c.Currency == primaryCurrency)
+            ?? byCurrencyList.FirstOrDefault();
+
+        var topLevelInflow = primarySummary?.TotalInflow ?? 0m;
+        var topLevelOutflow = primarySummary?.TotalOutflow ?? 0m;
+        var topLevelNet = primarySummary?.NetCashFlow ?? 0m;
+        var topLevelCount = primarySummary?.TotalTransactionsCount ?? 0;
+        var topLevelBreakdown = primarySummary?.Breakdown ?? (IReadOnlyList<TransactionCategoryBreakdownDto>)Array.Empty<TransactionCategoryBreakdownDto>();
+        var topLevelCurrency = primarySummary?.Currency ?? primaryCurrency;
+
         return new TransactionSummaryDto(
-            TotalInflow: totalInflow,
-            TotalOutflow: totalOutflow,
-            NetCashFlow: totalInflow - totalOutflow,
-            TotalTransactionsCount: completedTransactions.Count,
-            Currency: primaryCurrency,
-            Breakdown: breakdown);
+            TotalInflow: topLevelInflow,
+            TotalOutflow: topLevelOutflow,
+            NetCashFlow: topLevelNet,
+            TotalTransactionsCount: topLevelCount,
+            Currency: topLevelCurrency,
+            Breakdown: topLevelBreakdown,
+            Currencies: byCurrencyList);
     }
 }

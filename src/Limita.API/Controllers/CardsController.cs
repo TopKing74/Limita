@@ -240,6 +240,33 @@ public class CardsController : BaseApiController
         return Ok(ApiResponse<CardDetailsDto>.Ok(card, "Card PIN updated successfully."));
     }
 
+    /// <summary>
+    /// Set a card as the default card for its linked account.
+    /// </summary>
+    [HttpPatch("{id:guid}/default")]
+    [ProducesResponseType(typeof(ApiResponse<CardDetailsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CardDetailsDto>>> SetDefaultCard(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var card = await _cardService.SetDefaultCardAsync(userId, id, cancellationToken);
+        if (card is null)
+        {
+            return NotFound(ApiResponse.Fail("Card not found or you do not have access to it."));
+        }
+
+        return Ok(ApiResponse<CardDetailsDto>.Ok(card, "Card set as default successfully."));
+    }
+
     private string? GetRequiredUserId() =>
         string.IsNullOrWhiteSpace(_currentUserService.UserId) ? null : _currentUserService.UserId;
 }

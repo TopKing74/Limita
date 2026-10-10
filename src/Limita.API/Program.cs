@@ -20,7 +20,7 @@ builder.Services.AddLimitaServices(builder.Configuration);
 var app = builder.Build();
 
 // 3. Global Exception Handling Middleware
-app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // 4. Configure Swagger and API Documentation
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())

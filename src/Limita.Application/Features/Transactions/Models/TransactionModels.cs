@@ -119,18 +119,35 @@ public record TransactionCategoryBreakdownDto(
     int TransactionCount);
 
 /// <summary>
-/// Aggregated financial summary of the user's transactions (total inflow, outflow, and breakdown).
+/// Aggregated financial summary grouped for a specific currency code.
 /// </summary>
-/// <param name="TotalInflow">Total deposits and incoming transfers.</param>
-/// <param name="TotalOutflow">Total withdrawals, outgoing transfers, and payments.</param>
-/// <param name="NetCashFlow">Net cash flow (Inflow minus Outflow).</param>
-/// <param name="TotalTransactionsCount">Total number of transactions executed.</param>
+public record CurrencySummaryDto(
+    string Currency,
+    decimal TotalInflow,
+    decimal TotalOutflow,
+    decimal NetCashFlow,
+    int TotalTransactionsCount,
+    IReadOnlyList<TransactionCategoryBreakdownDto> Breakdown);
+
+/// <summary>
+/// Aggregated financial summary of the user's transactions (total inflow, outflow, and breakdown).
+/// Supports multi-currency portfolios grouped per currency code.
+/// </summary>
+/// <param name="TotalInflow">Total deposits and incoming transfers for the primary currency.</param>
+/// <param name="TotalOutflow">Total withdrawals, outgoing transfers, and payments for the primary currency.</param>
+/// <param name="NetCashFlow">Net cash flow (Inflow minus Outflow) for the primary currency.</param>
+/// <param name="TotalTransactionsCount">Total number of transactions executed in the primary currency.</param>
 /// <param name="Currency">Primary currency code (e.g. EGP).</param>
-/// <param name="Breakdown">List of categorized volume breakdowns.</param>
+/// <param name="Breakdown">List of categorized volume breakdowns for the primary currency.</param>
+/// <param name="Currencies">Per-currency breakdown list for multi-currency user portfolios.</param>
 public record TransactionSummaryDto(
     decimal TotalInflow,
     decimal TotalOutflow,
     decimal NetCashFlow,
     int TotalTransactionsCount,
     string Currency,
-    IReadOnlyList<TransactionCategoryBreakdownDto> Breakdown);
+    IReadOnlyList<TransactionCategoryBreakdownDto> Breakdown,
+    IReadOnlyList<CurrencySummaryDto>? Currencies = null)
+{
+    public IReadOnlyList<CurrencySummaryDto> ByCurrency => Currencies ?? Array.Empty<CurrencySummaryDto>();
+}

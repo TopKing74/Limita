@@ -52,15 +52,8 @@ public class BillsController : BaseApiController
             return BadRequest(ApiResponse.Fail("Validation failed.", errors));
         }
 
-        try
-        {
-            var bill = await _billService.CreateBillAsync(userId, request, cancellationToken);
-            return CreatedAtAction(nameof(GetUserBills), new { }, ApiResponse<BillDto>.Ok(bill, "Bill created successfully."));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ApiResponse.Fail(ex.Message));
-        }
+        var bill = await _billService.CreateBillAsync(userId, request, cancellationToken);
+        return CreatedAtAction(nameof(GetUserBills), new { }, ApiResponse<BillDto>.Ok(bill, "Bill created successfully."));
     }
 
     /// <summary>
@@ -109,19 +102,8 @@ public class BillsController : BaseApiController
             return BadRequest(ApiResponse.Fail("Validation failed.", errors));
         }
 
-        try
-        {
-            var response = await _billService.PayBillAsync(userId, id, request, cancellationToken);
-            return Ok(ApiResponse<BillPaymentResponseDto>.Ok(response, "Bill paid successfully."));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse.Fail(ex.Message));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ApiResponse.Fail(ex.Message));
-        }
+        var response = await _billService.PayBillAsync(userId, id, request, cancellationToken);
+        return Ok(ApiResponse<BillPaymentResponseDto>.Ok(response, "Bill paid successfully."));
     }
 
     private string? GetRequiredUserId() =>

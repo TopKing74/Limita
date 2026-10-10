@@ -40,4 +40,9 @@ public interface ICardService
         Guid cardId,
         ChangeCardPinRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<CardDetailsDto?> SetDefaultCardAsync(
+        string userId,
+        Guid cardId,
+        CancellationToken cancellationToken = default);
 }

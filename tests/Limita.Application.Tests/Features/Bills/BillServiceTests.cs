@@ -220,4 +220,86 @@ public class BillServiceTests
 
         await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Insufficient*");
     }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldPreventDoublePayment_AndAtomicallyDebitAndMarkPaid()
+    {
+        // Arrange
+        var userId = "user-1";
+        var accountId = Guid.NewGuid();
+        var billId = Guid.NewGuid();
+        var bill = new Bill
+        {
+            Id = billId,
+            UserId = userId,
+            BillingNumber = "BILL-DOUBLE-CHECK",
+            Amount = 250m,
+            Status = BillStatus.Pending
+        };
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Balance = 1000m,
+            Currency = "EGP",
+            Status = AccountStatus.Active
+        };
+
+        var dbBills = new List<Bill> { bill };
+        var dbAccounts = new List<Account> { account };
+        var dbTransactions = new List<Transaction>();
+
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(dbBills);
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(dbAccounts);
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(dbTransactions);
+
+        // Act 1: First payment attempt succeeds
+        var firstResponse = await _billService.PayBillAsync(userId, billId, new PayBillRequest(accountId));
+
+        // Assert 1: Account debited, bill marked Paid
+        firstResponse.Should().NotBeNull();
+        firstResponse.AmountPaid.Should().Be(250m);
+        account.Balance.Should().Be(750m);
+        bill.Status.Should().Be(BillStatus.Paid);
+
+        // Act 2: Second payment attempt for the now-paid bill
+        var doublePayAction = async () => await _billService.PayBillAsync(userId, billId, new PayBillRequest(accountId));
+
+        // Assert 2: Double payment is immediately rejected and balance remains unchanged
+        await doublePayAction.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*already paid*");
+        account.Balance.Should().Be(750m); // Balance not debited a second time!
+    }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldThrowInvalidOperationException_WhenBillStatusIsNotPending()
+    {
+        // Arrange
+        var userId = "user-1";
+        var accountId = Guid.NewGuid();
+        var bill = new Bill
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Amount = 100m,
+            Status = BillStatus.Cancelled
+        };
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Balance = 1000m,
+            Status = AccountStatus.Active
+        };
+
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+
+        // Act
+        var action = async () => await _billService.PayBillAsync(userId, bill.Id, new PayBillRequest(accountId));
+
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*cannot be paid because its status is Cancelled*");
+    }
 }

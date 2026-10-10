@@ -155,7 +155,7 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 6. Bill Providers & Pending Bills
+        // 6. Bill Providers
         if (!await context.BillProviders.AnyAsync())
         {
             var telecomProvider = new BillProvider
@@ -188,38 +188,52 @@ public static class DbInitializer
 
             await context.BillProviders.AddRangeAsync(telecomProvider, electricityProvider, waterProvider, internetProvider);
             await context.SaveChangesAsync();
+        }
 
-            // 7. Pending Bills
-            var bills = new List<Bill>
+        // 7. Pending Bills for demo user
+        demoUser ??= await userManager.FindByEmailAsync(demoEmail);
+        if (demoUser != null && !await context.Bills.AnyAsync(b => b.UserId == demoUser.Id))
+        {
+            var electricityProvider = await context.BillProviders.FirstOrDefaultAsync(p => p.Category == BillCategory.Electricity);
+            var internetProvider = await context.BillProviders.FirstOrDefaultAsync(p => p.Category == BillCategory.Internet);
+            var waterProvider = await context.BillProviders.FirstOrDefaultAsync(p => p.Category == BillCategory.Water);
+
+            if (electricityProvider != null && internetProvider != null && waterProvider != null)
             {
-                new()
+                var bills = new List<Bill>
                 {
-                    ProviderId = electricityProvider.Id,
-                    BillingNumber = "ELEC-2026-98124",
-                    Amount = 850.50m,
-                    DueDate = DateTime.UtcNow.AddDays(14),
-                    Status = BillStatus.Pending
-                },
-                new()
-                {
-                    ProviderId = internetProvider.Id,
-                    BillingNumber = "INT-2026-55412",
-                    Amount = 320.00m,
-                    DueDate = DateTime.UtcNow.AddDays(7),
-                    Status = BillStatus.Pending
-                },
-                new()
-                {
-                    ProviderId = waterProvider.Id,
-                    BillingNumber = "WTR-2026-11234",
-                    Amount = 145.75m,
-                    DueDate = DateTime.UtcNow.AddDays(21),
-                    Status = BillStatus.Pending
-                }
-            };
+                    new()
+                    {
+                        UserId = demoUser.Id,
+                        ProviderId = electricityProvider.Id,
+                        BillingNumber = "ELEC-2026-98124",
+                        Amount = 850.50m,
+                        DueDate = DateTime.UtcNow.AddDays(14),
+                        Status = BillStatus.Pending
+                    },
+                    new()
+                    {
+                        UserId = demoUser.Id,
+                        ProviderId = internetProvider.Id,
+                        BillingNumber = "INT-2026-55412",
+                        Amount = 320.00m,
+                        DueDate = DateTime.UtcNow.AddDays(7),
+                        Status = BillStatus.Pending
+                    },
+                    new()
+                    {
+                        UserId = demoUser.Id,
+                        ProviderId = waterProvider.Id,
+                        BillingNumber = "WTR-2026-11234",
+                        Amount = 145.75m,
+                        DueDate = DateTime.UtcNow.AddDays(21),
+                        Status = BillStatus.Pending
+                    }
+                };
 
-            await context.Bills.AddRangeAsync(bills);
-            await context.SaveChangesAsync();
+                await context.Bills.AddRangeAsync(bills);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

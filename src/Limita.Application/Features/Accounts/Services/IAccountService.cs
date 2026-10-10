@@ -29,6 +29,12 @@ public interface IAccountService
         WithdrawalRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<TransactionDto> DepositAsync(
+        string userId,
+        Guid accountId,
+        DepositRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<TransactionDto> RechargeAsync(
         string userId,
         Guid accountId,

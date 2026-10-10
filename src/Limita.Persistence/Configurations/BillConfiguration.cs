@@ -17,6 +17,9 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
         builder.Property(b => b.Amount)
             .HasPrecision(18, 2);
 
+        builder.Property(b => b.RowVersion)
+            .IsRowVersion();
+
         builder.HasOne(b => b.Provider)
             .WithMany(p => p.Bills)
             .HasForeignKey(b => b.ProviderId)

@@ -78,34 +78,68 @@ public class CardService : ICardService
         var (atmLimit, posLimit) = GetDefaultLimits(request.Type, account.Currency);
         var now = DateTime.UtcNow;
 
-        if (request.IsDefault)
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction = null;
+        try
         {
-            await ClearDefaultFlagsAsync(account.Id, cancellationToken);
+            if (_context.Database != null && _context.Database.CurrentTransaction == null)
+            {
+                transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            }
         }
+        catch (InvalidOperationException) { }
+        catch (NotSupportedException) { }
 
-        var card = new BankCard
+        try
         {
-            AccountId = account.Id,
-            CardHolderName = holderName,
-            MaskedNumber = GenerateMaskedNumber(request.Type),
-            ExpiryMonth = now.Month,
-            ExpiryYear = now.Year + 3,
-            Type = request.Type,
-            Form = request.Form,
-            Status = request.Form == CardForm.Virtual
-                ? CardStatus.Active
-                : CardStatus.PendingActivation,
-            IsDefault = request.IsDefault,
-            DailyAtmLimit = atmLimit,
-            DailyPosLimit = posLimit,
-            CreatedAt = now
-        };
+            if (request.IsDefault)
+            {
+                await ClearDefaultFlagsAsync(account.Id, null, cancellationToken);
+            }
 
-        await _context.BankCards.AddAsync(card, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+            var card = new BankCard
+            {
+                AccountId = account.Id,
+                CardHolderName = holderName,
+                MaskedNumber = GenerateMaskedNumber(request.Type),
+                ExpiryMonth = now.Month,
+                ExpiryYear = now.Year + 3,
+                Type = request.Type,
+                Form = request.Form,
+                Status = request.Form == CardForm.Virtual
+                    ? CardStatus.Active
+                    : CardStatus.PendingActivation,
+                IsDefault = request.IsDefault,
+                DailyAtmLimit = atmLimit,
+                DailyPosLimit = posLimit,
+                CreatedAt = now
+            };
 
-        card.Account = account;
-        return MapToDetails(card);
+            await _context.BankCards.AddAsync(card, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            if (transaction != null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            card.Account = account;
+            return MapToDetails(card);
+        }
+        catch
+        {
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            throw;
+        }
+        finally
+        {
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
     }
 
     public async Task<CardDetailsDto?> BlockCardAsync(
@@ -232,6 +266,68 @@ public class CardService : ICardService
         return MapToDetails(card);
     }
 
+    public async Task<CardDetailsDto?> SetDefaultCardAsync(
+        string userId,
+        Guid cardId,
+        CancellationToken cancellationToken = default)
+    {
+        var card = await GetOwnedCardTrackedAsync(userId, cardId, cancellationToken);
+        if (card is null)
+        {
+            return null;
+        }
+
+        EnsureCardIsOperable(card);
+
+        if (card.IsDefault)
+        {
+            return MapToDetails(card);
+        }
+
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction = null;
+        try
+        {
+            if (_context.Database != null && _context.Database.CurrentTransaction == null)
+            {
+                transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            }
+        }
+        catch (InvalidOperationException) { }
+        catch (NotSupportedException) { }
+
+        try
+        {
+            await ClearDefaultFlagsAsync(card.AccountId, card.Id, cancellationToken);
+
+            card.IsDefault = true;
+            card.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            if (transaction != null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return MapToDetails(card);
+        }
+        catch
+        {
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            throw;
+        }
+        finally
+        {
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
+    }
+
     private IQueryable<BankCard> OwnedCardsQuery(string userId) =>
         _context.BankCards.Where(c => c.Account!.UserId == userId);
 
@@ -245,11 +341,17 @@ public class CardService : ICardService
             .FirstOrDefaultAsync(c => c.Id == cardId, cancellationToken);
     }
 
-    private async Task ClearDefaultFlagsAsync(Guid accountId, CancellationToken cancellationToken)
+    private async Task ClearDefaultFlagsAsync(Guid accountId, Guid? excludeCardId = null, CancellationToken cancellationToken = default)
     {
-        var defaults = await _context.BankCards
-            .Where(c => c.AccountId == accountId && c.IsDefault)
-            .ToListAsync(cancellationToken);
+        var query = _context.BankCards
+            .Where(c => c.AccountId == accountId && c.IsDefault);
+
+        if (excludeCardId.HasValue)
+        {
+            query = query.Where(c => c.Id != excludeCardId.Value);
+        }
+
+        var defaults = await query.ToListAsync(cancellationToken);
 
         foreach (var existing in defaults)
         {

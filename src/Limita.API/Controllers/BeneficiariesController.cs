@@ -110,19 +110,12 @@ public class BeneficiariesController : BaseApiController
             return BadRequest(ApiResponse.Fail("Validation failed.", errors));
         }
 
-        try
-        {
-            var created = await _beneficiaryService.CreateBeneficiaryAsync(userId, request, cancellationToken);
+        var created = await _beneficiaryService.CreateBeneficiaryAsync(userId, request, cancellationToken);
 
-            return CreatedAtAction(
-                nameof(GetBeneficiaryById),
-                new { id = created.Id },
-                ApiResponse<BeneficiaryDto>.Ok(created, "Beneficiary added successfully."));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ApiResponse.Fail(ex.Message));
-        }
+        return CreatedAtAction(
+            nameof(GetBeneficiaryById),
+            new { id = created.Id },
+            ApiResponse<BeneficiaryDto>.Ok(created, "Beneficiary added successfully."));
     }
 
     /// <summary>

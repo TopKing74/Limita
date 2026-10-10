@@ -252,11 +252,31 @@ public class AccountService : IAccountService
             transaction.CreatedAt);
     }
 
+    public async Task<TransactionDto> DepositAsync(
+        string userId,
+        Guid accountId,
+        DepositRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await ExecuteDepositInternalAsync(userId, accountId, request.Amount, "deposit to", "Account deposit", cancellationToken);
+    }
+
     public async Task<TransactionDto> RechargeAsync(
         string userId,
         Guid accountId,
         RechargeRequest request,
         CancellationToken cancellationToken = default)
+    {
+        return await ExecuteDepositInternalAsync(userId, accountId, request.Amount, "recharge", "Account recharge", cancellationToken);
+    }
+
+    private async Task<TransactionDto> ExecuteDepositInternalAsync(
+        string userId,
+        Guid accountId,
+        decimal amount,
+        string actionVerb,
+        string description,
+        CancellationToken cancellationToken)
     {
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId, cancellationToken);
@@ -268,20 +288,20 @@ public class AccountService : IAccountService
 
         if (account.Status != AccountStatus.Active)
         {
-            throw new InvalidOperationException("Cannot recharge an inactive or blocked account.");
+            throw new InvalidOperationException($"Cannot {actionVerb} an inactive or blocked account.");
         }
 
-        account.Balance += request.Amount;
+        account.Balance += amount;
 
         var transaction = new Transaction
         {
             AccountId = accountId,
             ReferenceNumber = $"DEP-{Guid.NewGuid():N}"[..16].ToUpperInvariant(),
             Type = TransactionType.Deposit,
-            Amount = request.Amount,
+            Amount = amount,
             Currency = account.Currency,
             Status = TransactionStatus.Completed,
-            Description = "Account recharge",
+            Description = description,
             CreatedAt = DateTime.UtcNow
         };
 

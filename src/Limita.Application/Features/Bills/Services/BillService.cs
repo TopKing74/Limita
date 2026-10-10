@@ -81,65 +81,103 @@ public class BillService : IBillService
 
     public async Task<BillPaymentResponseDto> PayBillAsync(string userId, Guid billId, PayBillRequest request, CancellationToken cancellationToken = default)
     {
-        var bill = await _context.Bills
-            .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId, cancellationToken);
-
-        if (bill == null)
-            throw new KeyNotFoundException("Bill not found or you do not have access to it.");
-
-        if (bill.Status == BillStatus.Paid)
-            throw new InvalidOperationException("The bill is already paid.");
-
-        var account = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
-
-        if (account == null)
-            throw new KeyNotFoundException("Account not found or you do not have access to it.");
-
-        if (account.Status != AccountStatus.Active)
-            throw new InvalidOperationException("Cannot pay from an inactive or blocked account.");
-
-        if (account.Balance < bill.Amount)
-            throw new InvalidOperationException("Insufficient available balance.");
-
-        // Debit the account
-        account.Balance -= bill.Amount;
-
-        // Create transaction
-        var transaction = new Transaction
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? dbTransaction = null;
+        try
         {
-            AccountId = account.Id,
-            ReferenceNumber = $"BPY-{Guid.NewGuid():N}"[..16].ToUpperInvariant(),
-            Type = TransactionType.BillPayment,
-            Amount = bill.Amount,
-            Currency = account.Currency,
-            Status = TransactionStatus.Completed,
-            Description = $"Payment for bill {bill.BillingNumber}",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await _context.Transactions.AddAsync(transaction, cancellationToken);
-
-        // Update bill status
-        bill.Status = BillStatus.Paid;
-        bill.UpdatedAt = DateTime.UtcNow;
+            if (_context.Database != null && _context.Database.CurrentTransaction == null)
+            {
+                dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            }
+        }
+        catch (InvalidOperationException) { }
+        catch (NotSupportedException) { }
 
         try
         {
-            // Atomically save changes
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw new InvalidOperationException("The account balance or bill status was modified by another transaction. Please try again.");
-        }
+            var bill = await _context.Bills
+                .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId, cancellationToken);
 
-        return new BillPaymentResponseDto(
-            bill.Id,
-            transaction.Id,
-            transaction.ReferenceNumber,
-            bill.Amount,
-            DateTime.UtcNow
-        );
+            if (bill == null)
+                throw new KeyNotFoundException("Bill not found or you do not have access to it.");
+
+            if (bill.Status == BillStatus.Paid)
+                throw new InvalidOperationException("The bill is already paid.");
+
+            if (bill.Status != BillStatus.Pending)
+                throw new InvalidOperationException($"The bill cannot be paid because its status is {bill.Status}.");
+
+            var account = await _context.Accounts
+                .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
+
+            if (account == null)
+                throw new KeyNotFoundException("Account not found or you do not have access to it.");
+
+            if (account.Status != AccountStatus.Active)
+                throw new InvalidOperationException("Cannot pay from an inactive or blocked account.");
+
+            if (account.Balance < bill.Amount)
+                throw new InvalidOperationException("Insufficient available balance.");
+
+            // Debit the account
+            account.Balance -= bill.Amount;
+            account.UpdatedAt = DateTime.UtcNow;
+
+            // Transition bill status atomically
+            bill.Status = BillStatus.Paid;
+            bill.UpdatedAt = DateTime.UtcNow;
+
+            // Create ledger transaction
+            var transaction = new Transaction
+            {
+                AccountId = account.Id,
+                ReferenceNumber = $"BPY-{Guid.NewGuid():N}"[..16].ToUpperInvariant(),
+                Type = TransactionType.BillPayment,
+                Amount = bill.Amount,
+                Currency = account.Currency,
+                Status = TransactionStatus.Completed,
+                Description = $"Payment for bill {bill.BillingNumber}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Transactions.AddAsync(transaction, cancellationToken);
+
+            try
+            {
+                // Atomically persist changes
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new InvalidOperationException("The account balance or bill status was modified by another transaction. Please try again.");
+            }
+
+            if (dbTransaction != null)
+            {
+                await dbTransaction.CommitAsync(cancellationToken);
+            }
+
+            return new BillPaymentResponseDto(
+                bill.Id,
+                transaction.Id,
+                transaction.ReferenceNumber,
+                bill.Amount,
+                DateTime.UtcNow
+            );
+        }
+        catch
+        {
+            if (dbTransaction != null)
+            {
+                await dbTransaction.RollbackAsync(cancellationToken);
+            }
+            throw;
+        }
+        finally
+        {
+            if (dbTransaction != null)
+            {
+                await dbTransaction.DisposeAsync();
+            }
+        }
     }
 }

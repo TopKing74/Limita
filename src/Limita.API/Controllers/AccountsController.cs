@@ -16,19 +16,22 @@ public class AccountsController : BaseApiController
     private readonly IValidator<CreateAccountRequest> _createAccountValidator;
     private readonly IValidator<WithdrawalRequest> _withdrawalRequestValidator;
     private readonly IValidator<RechargeRequest> _rechargeRequestValidator;
+    private readonly IValidator<DepositRequest> _depositRequestValidator;
 
     public AccountsController(
         IAccountService accountService,
         ICurrentUserService currentUserService,
         IValidator<CreateAccountRequest> createAccountValidator,
         IValidator<WithdrawalRequest> withdrawalRequestValidator,
-        IValidator<RechargeRequest> rechargeRequestValidator)
+        IValidator<RechargeRequest> rechargeRequestValidator,
+        IValidator<DepositRequest> depositRequestValidator)
     {
         _accountService = accountService;
         _currentUserService = currentUserService;
         _createAccountValidator = createAccountValidator;
         _withdrawalRequestValidator = withdrawalRequestValidator;
         _rechargeRequestValidator = rechargeRequestValidator;
+        _depositRequestValidator = depositRequestValidator;
     }
 
     /// <summary>
@@ -162,6 +165,36 @@ public class AccountsController : BaseApiController
 
         var transaction = await _accountService.WithdrawAsync(userId, id, request, cancellationToken);
         return Ok(ApiResponse<TransactionDto>.Ok(transaction, "Withdrawal successful."));
+    }
+
+    /// <summary>
+    /// Deposit funds into an owned account.
+    /// </summary>
+    [HttpPost("{id:guid}/deposit")]
+    [ProducesResponseType(typeof(ApiResponse<TransactionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<TransactionDto>>> Deposit(
+        Guid id,
+        [FromBody] DepositRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var validationResult = await _depositRequestValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var transaction = await _accountService.DepositAsync(userId, id, request, cancellationToken);
+        return Ok(ApiResponse<TransactionDto>.Ok(transaction, "Deposit successful."));
     }
 
     /// <summary>

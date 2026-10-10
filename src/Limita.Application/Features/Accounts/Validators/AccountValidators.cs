@@ -32,6 +32,15 @@ public class WithdrawalRequestValidator : AbstractValidator<WithdrawalRequest>
     }
 }
 
+public class DepositRequestValidator : AbstractValidator<DepositRequest>
+{
+    public DepositRequestValidator()
+    {
+        RuleFor(x => x.Amount)
+            .GreaterThan(0).WithMessage("Deposit amount must be greater than zero.");
+    }
+}
+
 public class RechargeRequestValidator : AbstractValidator<RechargeRequest>
 {
     public RechargeRequestValidator()
