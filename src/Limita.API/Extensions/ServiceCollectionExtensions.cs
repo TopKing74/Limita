@@ -9,19 +9,13 @@ using Microsoft.OpenApi.Models;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Services;
-<<<<<<< HEAD
-<<<<<<< HEAD
 using Limita.Application.Features.Auth.Services;
 using Limita.Application.Features.Users.Services;
-=======
 using Limita.Application.Features.Beneficiaries.Services;
 using Limita.Application.Features.Transactions.Services;
 using Limita.Application.Features.Transfers.Services;
->>>>>>> pr-dev3-transfers
-=======
 using Limita.Application.Features.Bills.Services;
 using Limita.Application.Features.Cards.Services;
->>>>>>> pr-10-cards
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Identity;
@@ -181,7 +175,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAccountService, AccountService>();
-        services.AddScoped<Limita.Application.Features.Bills.Services.IBillService, Limita.Application.Features.Bills.Services.BillService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IBeneficiaryService, BeneficiaryService>();
