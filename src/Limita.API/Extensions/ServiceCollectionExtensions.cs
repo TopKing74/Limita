@@ -247,6 +247,8 @@ public static class ServiceCollectionExtensions
                     Array.Empty<string>()
                 }
             });
+
+            c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
         });
 
         return services;
