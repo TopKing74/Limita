@@ -12,4 +12,5 @@ public class ApplicationUser : IdentityUser
     public ICollection<Account> Accounts { get; set; } = new List<Account>();
     public ICollection<Beneficiary> Beneficiaries { get; set; } = new List<Beneficiary>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public ICollection<Bill> Bills { get; set; } = new List<Bill>();
 }

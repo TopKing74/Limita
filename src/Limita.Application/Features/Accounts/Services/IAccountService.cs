@@ -22,4 +22,16 @@ public interface IAccountService
         string userId,
         Guid accountId,
         CancellationToken cancellationToken = default);
+
+    Task<TransactionDto> WithdrawAsync(
+        string userId,
+        Guid accountId,
+        WithdrawalRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<TransactionDto> RechargeAsync(
+        string userId,
+        Guid accountId,
+        RechargeRequest request,
+        CancellationToken cancellationToken = default);
 }

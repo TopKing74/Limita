@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Services;
+using Limita.Application.Features.Bills.Services;
 using Limita.Application.Features.Cards.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
@@ -171,6 +172,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ICardService, CardService>();
         services.AddSingleton<ICardPinHasher, CardPinHasher>();
+        services.AddScoped<IBillService, BillService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
