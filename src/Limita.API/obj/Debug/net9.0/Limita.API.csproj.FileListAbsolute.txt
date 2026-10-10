@@ -357,10 +357,10 @@ D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\staticwebassets.build.js
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\staticwebassets.development.json
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\staticwebassets.build.endpoints.json
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\swae.build.ex.cache
+D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.csproj.Up2Date
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.dll
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\refint\Limita.API.dll
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.pdb
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\Limita.API.genruntimeconfig.cache
 D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\ref\Limita.API.dll
-D:\LimitaProject\Limita\src\Limita.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt

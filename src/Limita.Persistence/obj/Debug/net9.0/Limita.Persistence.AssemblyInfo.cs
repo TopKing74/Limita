@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Limita.Persistence")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+285005c8f8e7c394967ece52bf4803aca3a30e2f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4703370cd4fc09ee3c1ed5ad3a2c8fb964525153")]
 [assembly: System.Reflection.AssemblyProductAttribute("Limita.Persistence")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Limita.Persistence")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
