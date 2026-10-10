@@ -250,7 +250,8 @@ namespace Limita.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerUserId");
+                    b.HasIndex("OwnerUserId", "AccountNumber")
+                        .IsUnique();
 
                     b.ToTable("Beneficiaries");
                 });
@@ -481,10 +482,10 @@ namespace Limita.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
-
                     b.HasIndex("ReferenceNumber")
                         .IsUnique();
+
+                    b.HasIndex("AccountId", "CreatedAt");
 
                     b.ToTable("Transactions");
                 });
@@ -494,6 +495,10 @@ namespace Limita.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");

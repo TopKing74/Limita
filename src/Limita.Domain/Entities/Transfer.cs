@@ -14,5 +14,6 @@ public class Transfer : BaseEntity
     public Guid DestinationAccountId { get; set; }
     public Account? DestinationAccount { get; set; }
 
-    public TransferStatus Status { get; set; } = TransferStatus.Completed;
+    public decimal Amount { get; set; }
+    public TransferStatus Status { get; set; } = TransferStatus.Pending;
 }

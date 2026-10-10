@@ -9,8 +9,14 @@ using Microsoft.OpenApi.Models;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Services;
+<<<<<<< HEAD
 using Limita.Application.Features.Auth.Services;
 using Limita.Application.Features.Users.Services;
+=======
+using Limita.Application.Features.Beneficiaries.Services;
+using Limita.Application.Features.Transactions.Services;
+using Limita.Application.Features.Transfers.Services;
+>>>>>>> pr-dev3-transfers
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Identity;
@@ -172,6 +178,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Limita.Application.Features.Bills.Services.IBillService, Limita.Application.Features.Bills.Services.BillService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IBeneficiaryService, BeneficiaryService>();
+        services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ITransferService, TransferService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
