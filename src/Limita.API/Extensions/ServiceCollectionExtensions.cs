@@ -9,6 +9,8 @@ using Microsoft.OpenApi.Models;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Services;
+using Limita.Application.Features.Auth.Services;
+using Limita.Application.Features.Users.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Identity;
@@ -168,6 +170,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<Limita.Application.Features.Bills.Services.IBillService, Limita.Application.Features.Bills.Services.BillService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;

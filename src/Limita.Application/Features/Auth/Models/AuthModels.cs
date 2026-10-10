@@ -6,6 +6,8 @@ public record RegisterRequest(string FullName, string Email, string PhoneNumber,
 
 public record RefreshTokenRequest(string AccessToken, string RefreshToken);
 
+public record LogoutRequest(string RefreshToken);
+
 public record AuthResponse(
     string AccessToken,
     string RefreshToken,

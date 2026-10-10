@@ -37,3 +37,12 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
             .Matches(@"[\!\?\*\.]").WithMessage("Password must contain at least one special character (!?*.).");
     }
 }
+
+public class LogoutRequestValidator : AbstractValidator<LogoutRequest>
+{
+    public LogoutRequestValidator()
+    {
+        RuleFor(x => x.RefreshToken)
+            .NotEmpty().WithMessage("Refresh token is required.");
+    }
+}
