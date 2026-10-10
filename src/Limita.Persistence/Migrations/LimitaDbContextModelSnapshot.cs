@@ -171,6 +171,16 @@ namespace Limita.Persistence.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("BlockReason")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int?>("BlockType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("BlockedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("CardHolderName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -179,10 +189,21 @@ namespace Limita.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("DailyAtmLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("DailyPosLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("ExpiryMonth")
                         .HasColumnType("int");
 
                     b.Property<int>("ExpiryYear")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Form")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDefault")
@@ -192,6 +213,10 @@ namespace Limita.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PinHash")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");

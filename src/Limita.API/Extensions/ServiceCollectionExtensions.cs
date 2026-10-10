@@ -10,6 +10,7 @@ using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Services;
 <<<<<<< HEAD
+<<<<<<< HEAD
 using Limita.Application.Features.Auth.Services;
 using Limita.Application.Features.Users.Services;
 =======
@@ -17,9 +18,14 @@ using Limita.Application.Features.Beneficiaries.Services;
 using Limita.Application.Features.Transactions.Services;
 using Limita.Application.Features.Transfers.Services;
 >>>>>>> pr-dev3-transfers
+=======
+using Limita.Application.Features.Bills.Services;
+using Limita.Application.Features.Cards.Services;
+>>>>>>> pr-10-cards
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Identity;
+using Limita.Infrastructure.Security;
 using Limita.Persistence.Context;
 
 namespace Limita.API.Extensions;
@@ -181,6 +187,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBeneficiaryService, BeneficiaryService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ITransferService, TransferService>();
+        services.AddScoped<ICardService, CardService>();
+        services.AddSingleton<ICardPinHasher, CardPinHasher>();
+        services.AddScoped<IBillService, BillService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;

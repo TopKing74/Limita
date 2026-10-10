@@ -129,8 +129,11 @@ public static class DbInitializer
                 ExpiryMonth = 12,
                 ExpiryYear = DateTime.UtcNow.Year + 3,
                 Type = CardType.Debit,
+                Form = CardForm.Physical,
                 Status = CardStatus.Active,
-                IsDefault = true
+                IsDefault = true,
+                DailyAtmLimit = 5000m,
+                DailyPosLimit = 20000m
             };
 
             var creditCard = new BankCard
@@ -141,8 +144,11 @@ public static class DbInitializer
                 ExpiryMonth = 6,
                 ExpiryYear = DateTime.UtcNow.Year + 2,
                 Type = CardType.Credit,
+                Form = CardForm.Virtual,
                 Status = CardStatus.Active,
-                IsDefault = false
+                IsDefault = false,
+                DailyAtmLimit = 10000m,
+                DailyPosLimit = 50000m
             };
 
             await context.BankCards.AddRangeAsync(debitCard, creditCard);
