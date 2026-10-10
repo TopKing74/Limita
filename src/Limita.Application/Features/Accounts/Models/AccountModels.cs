@@ -34,3 +34,15 @@ public record AccountBalanceDto(
     decimal Balance,
     AccountStatus Status,
     DateTime AsOfUtc);
+
+public record WithdrawalRequest(decimal Amount);
+
+public record TransactionDto(
+    Guid Id,
+    Guid AccountId,
+    string ReferenceNumber,
+    TransactionType Type,
+    decimal Amount,
+    string Currency,
+    TransactionStatus Status,
+    DateTime CreatedAt);

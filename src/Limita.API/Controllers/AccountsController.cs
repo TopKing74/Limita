@@ -14,15 +14,18 @@ public class AccountsController : BaseApiController
     private readonly IAccountService _accountService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IValidator<CreateAccountRequest> _createAccountValidator;
+    private readonly IValidator<WithdrawalRequest> _withdrawalRequestValidator;
 
     public AccountsController(
         IAccountService accountService,
         ICurrentUserService currentUserService,
-        IValidator<CreateAccountRequest> createAccountValidator)
+        IValidator<CreateAccountRequest> createAccountValidator,
+        IValidator<WithdrawalRequest> withdrawalRequestValidator)
     {
         _accountService = accountService;
         _currentUserService = currentUserService;
         _createAccountValidator = createAccountValidator;
+        _withdrawalRequestValidator = withdrawalRequestValidator;
     }
 
     /// <summary>
@@ -127,6 +130,37 @@ public class AccountsController : BaseApiController
 
         return Ok(ApiResponse<AccountBalanceDto>.Ok(balance, "Account balance retrieved successfully."));
     }
+
+    /// <summary>
+    /// Withdraw funds from an owned account.
+    /// </summary>
+    [HttpPost("{id:guid}/withdraw")]
+    [ProducesResponseType(typeof(ApiResponse<TransactionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<TransactionDto>>> Withdraw(
+        Guid id,
+        [FromBody] WithdrawalRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var validationResult = await _withdrawalRequestValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var transaction = await _accountService.WithdrawAsync(userId, id, request, cancellationToken);
+        return Ok(ApiResponse<TransactionDto>.Ok(transaction, "Withdrawal successful."));
+    }
+
 
     private string? GetRequiredUserId() =>
         string.IsNullOrWhiteSpace(_currentUserService.UserId) ? null : _currentUserService.UserId;

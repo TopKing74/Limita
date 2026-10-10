@@ -30,3 +30,19 @@ D:\LimitaProject\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Applicati
 D:\LimitaProject\Limita\src\Limita.Application\obj\Debug\net9.0\refint\Limita.Application.dll
 D:\LimitaProject\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.pdb
 D:\LimitaProject\Limita\src\Limita.Application\obj\Debug\net9.0\ref\Limita.Application.dll
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\bin\Debug\net9.0\Limita.Application.deps.json
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\bin\Debug\net9.0\Limita.Application.dll
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\bin\Debug\net9.0\Limita.Application.pdb
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\bin\Debug\net9.0\Limita.Domain.dll
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\bin\Debug\net9.0\Limita.Domain.pdb
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.csproj.AssemblyReference.cache
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.AssemblyInfoInputs.cache
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.AssemblyInfo.cs
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.csproj.CoreCompileInputs.cache
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.sourcelink.json
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.A.9358D676.Up2Date
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.dll
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\refint\Limita.Application.dll
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\Limita.Application.pdb
+D:\Moayad Al-Madhoun\Training\Limita\src\Limita.Application\obj\Debug\net9.0\ref\Limita.Application.dll

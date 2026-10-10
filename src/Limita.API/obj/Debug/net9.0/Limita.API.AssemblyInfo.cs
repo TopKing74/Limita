@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Limita.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+285005c8f8e7c394967ece52bf4803aca3a30e2f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed70c161efdc071f43fe93552be03e71aa49b265")]
 [assembly: System.Reflection.AssemblyProductAttribute("Limita.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Limita.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
