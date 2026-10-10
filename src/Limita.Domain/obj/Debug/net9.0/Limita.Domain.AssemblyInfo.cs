@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Limita.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e1555b1105c486c8301ace2dc72a29ffb342a94")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db467c3b4df7aceda4a67e4bf0effeadb6056a65")]
 [assembly: System.Reflection.AssemblyProductAttribute("Limita.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Limita.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

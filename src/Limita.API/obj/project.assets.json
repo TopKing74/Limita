@@ -5224,11 +5224,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.API\\Limita.API.csproj",
+      "projectUniqueName": "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.API\\Limita.API.csproj",
       "projectName": "Limita.API",
-      "projectPath": "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.API\\Limita.API.csproj",
+      "projectPath": "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.API\\Limita.API.csproj",
       "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-      "outputPath": "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.API\\obj\\",
+      "outputPath": "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.API\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -5250,14 +5250,14 @@
           "framework": "net9.0",
           "targetAlias": "net9.0",
           "projectReferences": {
-            "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Application\\Limita.Application.csproj": {
-              "projectPath": "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Application\\Limita.Application.csproj"
+            "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Application\\Limita.Application.csproj": {
+              "projectPath": "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Application\\Limita.Application.csproj"
             },
-            "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj": {
-              "projectPath": "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj"
+            "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj": {
+              "projectPath": "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Infrastructure\\Limita.Infrastructure.csproj"
             },
-            "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Persistence\\Limita.Persistence.csproj": {
-              "projectPath": "d:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Persistence\\Limita.Persistence.csproj"
+            "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Persistence\\Limita.Persistence.csproj": {
+              "projectPath": "D:\\Moayad Al-Madhoun\\Training\\Limita\\src\\Limita.Persistence\\Limita.Persistence.csproj"
             }
           }
         }
