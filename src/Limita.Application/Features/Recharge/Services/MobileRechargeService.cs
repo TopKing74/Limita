@@ -20,37 +20,26 @@ public class MobileRechargeService : IMobileRechargeService
         MobileRechargeRequest request,
         CancellationToken cancellationToken = default)
     {
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? dbTransaction = null;
-        try
+        var account = await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
+
+        if (account is null)
         {
-            if (_context.Database != null && _context.Database.CurrentTransaction == null)
-            {
-                dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-            }
+            throw new KeyNotFoundException("Account not found or you do not have access to it.");
         }
-        catch (InvalidOperationException) { }
-        catch (NotSupportedException) { }
 
-        try
+        if (account.Status != AccountStatus.Active)
         {
-            var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
+            throw new InvalidOperationException("Cannot perform mobile recharge from an inactive or blocked account.");
+        }
 
-            if (account is null)
-            {
-                throw new KeyNotFoundException("Account not found or you do not have access to it.");
-            }
+        if (account.Balance < request.Amount)
+        {
+            throw new InvalidOperationException("Insufficient available balance.");
+        }
 
-            if (account.Status != AccountStatus.Active)
-            {
-                throw new InvalidOperationException("Cannot perform mobile recharge from an inactive or blocked account.");
-            }
-
-            if (account.Balance < request.Amount)
-            {
-                throw new InvalidOperationException("Insufficient available balance.");
-            }
-
+        async Task<MobileRechargeResponseDto> ExecuteRechargeCoreAsync()
+        {
             // Debit account balance
             account.Balance -= request.Amount;
             account.UpdatedAt = DateTime.UtcNow;
@@ -93,11 +82,6 @@ public class MobileRechargeService : IMobileRechargeService
                 throw new InvalidOperationException("The account balance was modified by another transaction. Please try again.");
             }
 
-            if (dbTransaction != null)
-            {
-                await dbTransaction.CommitAsync(cancellationToken);
-            }
-
             return new MobileRechargeResponseDto(
                 recharge.Id,
                 account.Id,
@@ -108,20 +92,27 @@ public class MobileRechargeService : IMobileRechargeService
                 transaction.Id,
                 recharge.CreatedAt);
         }
-        catch
+
+        if (_context.Database == null)
         {
-            if (dbTransaction != null)
+            return await ExecuteRechargeCoreAsync();
+        }
+
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var result = await ExecuteRechargeCoreAsync();
+                await dbTransaction.CommitAsync(cancellationToken);
+                return result;
+            }
+            catch
             {
                 await dbTransaction.RollbackAsync(cancellationToken);
+                throw;
             }
-            throw;
-        }
-        finally
-        {
-            if (dbTransaction != null)
-            {
-                await dbTransaction.DisposeAsync();
-            }
-        }
+        });
     }
 }

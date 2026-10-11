@@ -81,43 +81,32 @@ public class BillService : IBillService
 
     public async Task<BillPaymentResponseDto> PayBillAsync(string userId, Guid billId, PayBillRequest request, CancellationToken cancellationToken = default)
     {
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? dbTransaction = null;
-        try
+        var bill = await _context.Bills
+            .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId, cancellationToken);
+
+        if (bill == null)
+            throw new KeyNotFoundException("Bill not found or you do not have access to it.");
+
+        if (bill.Status == BillStatus.Paid)
+            throw new InvalidOperationException("The bill is already paid.");
+
+        if (bill.Status != BillStatus.Pending)
+            throw new InvalidOperationException($"The bill cannot be paid because its status is {bill.Status}.");
+
+        var account = await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
+
+        if (account == null)
+            throw new KeyNotFoundException("Account not found or you do not have access to it.");
+
+        if (account.Status != AccountStatus.Active)
+            throw new InvalidOperationException("Cannot pay from an inactive or blocked account.");
+
+        if (account.Balance < bill.Amount)
+            throw new InvalidOperationException("Insufficient available balance.");
+
+        async Task<BillPaymentResponseDto> ExecutePayBillCoreAsync()
         {
-            if (_context.Database != null && _context.Database.CurrentTransaction == null)
-            {
-                dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-            }
-        }
-        catch (InvalidOperationException) { }
-        catch (NotSupportedException) { }
-
-        try
-        {
-            var bill = await _context.Bills
-                .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId, cancellationToken);
-
-            if (bill == null)
-                throw new KeyNotFoundException("Bill not found or you do not have access to it.");
-
-            if (bill.Status == BillStatus.Paid)
-                throw new InvalidOperationException("The bill is already paid.");
-
-            if (bill.Status != BillStatus.Pending)
-                throw new InvalidOperationException($"The bill cannot be paid because its status is {bill.Status}.");
-
-            var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == request.AccountId && a.UserId == userId, cancellationToken);
-
-            if (account == null)
-                throw new KeyNotFoundException("Account not found or you do not have access to it.");
-
-            if (account.Status != AccountStatus.Active)
-                throw new InvalidOperationException("Cannot pay from an inactive or blocked account.");
-
-            if (account.Balance < bill.Amount)
-                throw new InvalidOperationException("Insufficient available balance.");
-
             // Debit the account
             account.Balance -= bill.Amount;
             account.UpdatedAt = DateTime.UtcNow;
@@ -151,11 +140,6 @@ public class BillService : IBillService
                 throw new InvalidOperationException("The account balance or bill status was modified by another transaction. Please try again.");
             }
 
-            if (dbTransaction != null)
-            {
-                await dbTransaction.CommitAsync(cancellationToken);
-            }
-
             return new BillPaymentResponseDto(
                 bill.Id,
                 transaction.Id,
@@ -164,20 +148,27 @@ public class BillService : IBillService
                 DateTime.UtcNow
             );
         }
-        catch
+
+        if (_context.Database == null)
         {
-            if (dbTransaction != null)
+            return await ExecutePayBillCoreAsync();
+        }
+
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var result = await ExecutePayBillCoreAsync();
+                await dbTransaction.CommitAsync(cancellationToken);
+                return result;
+            }
+            catch
             {
                 await dbTransaction.RollbackAsync(cancellationToken);
+                throw;
             }
-            throw;
-        }
-        finally
-        {
-            if (dbTransaction != null)
-            {
-                await dbTransaction.DisposeAsync();
-            }
-        }
+        });
     }
 }

@@ -78,18 +78,7 @@ public class CardService : ICardService
         var (atmLimit, posLimit) = GetDefaultLimits(request.Type, account.Currency);
         var now = DateTime.UtcNow;
 
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction = null;
-        try
-        {
-            if (_context.Database != null && _context.Database.CurrentTransaction == null)
-            {
-                transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-            }
-        }
-        catch (InvalidOperationException) { }
-        catch (NotSupportedException) { }
-
-        try
+        async Task<CardDetailsDto> ExecuteIssueCardInternalAsync()
         {
             if (request.IsDefault)
             {
@@ -117,29 +106,31 @@ public class CardService : ICardService
             await _context.BankCards.AddAsync(card, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            if (transaction != null)
-            {
-                await transaction.CommitAsync(cancellationToken);
-            }
-
             card.Account = account;
             return MapToDetails(card);
         }
-        catch
+
+        if (_context.Database == null)
         {
-            if (transaction != null)
+            return await ExecuteIssueCardInternalAsync();
+        }
+
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var result = await ExecuteIssueCardInternalAsync();
+                await transaction.CommitAsync(cancellationToken);
+                return result;
+            }
+            catch
             {
                 await transaction.RollbackAsync(cancellationToken);
+                throw;
             }
-            throw;
-        }
-        finally
-        {
-            if (transaction != null)
-            {
-                await transaction.DisposeAsync();
-            }
-        }
+        });
     }
 
     public async Task<CardDetailsDto?> BlockCardAsync(
@@ -284,18 +275,7 @@ public class CardService : ICardService
             return MapToDetails(card);
         }
 
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction = null;
-        try
-        {
-            if (_context.Database != null && _context.Database.CurrentTransaction == null)
-            {
-                transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-            }
-        }
-        catch (InvalidOperationException) { }
-        catch (NotSupportedException) { }
-
-        try
+        async Task<CardDetailsDto> ExecuteSetDefaultInternalAsync()
         {
             await ClearDefaultFlagsAsync(card.AccountId, card.Id, cancellationToken);
 
@@ -304,28 +284,30 @@ public class CardService : ICardService
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            if (transaction != null)
-            {
-                await transaction.CommitAsync(cancellationToken);
-            }
-
             return MapToDetails(card);
         }
-        catch
+
+        if (_context.Database == null)
         {
-            if (transaction != null)
+            return await ExecuteSetDefaultInternalAsync();
+        }
+
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var result = await ExecuteSetDefaultInternalAsync();
+                await transaction.CommitAsync(cancellationToken);
+                return result;
+            }
+            catch
             {
                 await transaction.RollbackAsync(cancellationToken);
+                throw;
             }
-            throw;
-        }
-        finally
-        {
-            if (transaction != null)
-            {
-                await transaction.DisposeAsync();
-            }
-        }
+        });
     }
 
     private IQueryable<BankCard> OwnedCardsQuery(string userId) =>
