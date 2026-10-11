@@ -17,11 +17,15 @@ using Limita.Application.Features.Transfers.Services;
 using Limita.Application.Features.Bills.Services;
 using Limita.Application.Features.Cards.Services;
 using Limita.Application.Features.Recharge.Services;
+using Limita.Application.Features.Notifications.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
+using Limita.Infrastructure.Hubs;
 using Limita.Infrastructure.Identity;
+using Limita.Infrastructure.Notifications;
 using Limita.Infrastructure.Security;
 using Limita.Persistence.Context;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Limita.API.Extensions;
 
@@ -126,6 +130,17 @@ public static class ServiceCollectionExtensions
             options.MapInboundClaims = false;
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    return Task.CompletedTask;
+                },
                 OnAuthenticationFailed = context =>
                 {
                     var logger = context.HttpContext.RequestServices
@@ -185,6 +200,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICardPinHasher, CardPinHasher>();
         services.AddScoped<IBillService, BillService>();
         services.AddScoped<IMobileRechargeService, MobileRechargeService>();
+        services.AddSignalR();
+        services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
@@ -196,9 +214,10 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("LimitaCorsPolicy", builder =>
             {
-                builder.AllowAnyOrigin()
+                builder.SetIsOriginAllowed(_ => true)
                        .AllowAnyMethod()
-                       .AllowAnyHeader();
+                       .AllowAnyHeader()
+                       .AllowCredentials();
             });
         });
 

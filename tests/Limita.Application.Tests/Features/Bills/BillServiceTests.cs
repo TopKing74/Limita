@@ -302,4 +302,38 @@ public class BillServiceTests
         await action.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*cannot be paid because its status is Cancelled*");
     }
+
+    [Fact]
+    public async Task PayBillAsync_ShouldTriggerNotification_WhenPaymentSucceedsAndNotificationServiceIsProvided()
+    {
+        // Arrange
+        var userId = "user-1";
+        var billId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+
+        var bill = new Bill { Id = billId, UserId = userId, Amount = 150m, Status = BillStatus.Pending, BillingNumber = "BILL-99" };
+        var account = new Account { Id = accountId, UserId = userId, Balance = 500m, Status = AccountStatus.Active, Currency = "EGP" };
+
+        _contextMock.Setup(c => c.Bills).ReturnsDbSet(new List<Bill> { bill });
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(new List<Transaction>());
+
+        var notificationServiceMock = new Mock<Limita.Application.Features.Notifications.Services.INotificationService>();
+        var serviceWithNotifications = new BillService(_contextMock.Object, notificationServiceMock.Object);
+
+        var request = new PayBillRequest(accountId);
+
+        // Act
+        var result = await serviceWithNotifications.PayBillAsync(userId, billId, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        notificationServiceMock.Verify(n => n.CreateAndSendNotificationAsync(
+            userId,
+            "Bill Paid",
+            It.Is<string>(msg => msg.Contains("BILL-99")),
+            "Transaction",
+            result.ReferenceNumber,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

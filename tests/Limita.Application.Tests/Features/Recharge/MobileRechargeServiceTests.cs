@@ -160,4 +160,46 @@ public class MobileRechargeServiceTests
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*Insufficient available balance*");
     }
+
+    [Fact]
+    public async Task RechargeMobileAsync_ShouldTriggerNotification_WhenSuccessfulAndNotificationServiceProvided()
+    {
+        // Arrange
+        var userId = "user-1";
+        var accountId = Guid.NewGuid();
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Balance = 500m,
+            Currency = "EGP",
+            Status = AccountStatus.Active
+        };
+
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+        _contextMock.Setup(c => c.MobileRecharges).ReturnsDbSet(new List<MobileRecharge>());
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(new List<Transaction>());
+
+        var notificationServiceMock = new Mock<Limita.Application.Features.Notifications.Services.INotificationService>();
+        var serviceWithNotifications = new MobileRechargeService(_contextMock.Object, notificationServiceMock.Object);
+
+        var request = new MobileRechargeRequest(
+            AccountId: accountId,
+            PhoneNumber: "01012345678",
+            Operator: MobileOperator.Vodafone,
+            Amount: 100m);
+
+        // Act
+        var result = await serviceWithNotifications.RechargeMobileAsync(userId, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        notificationServiceMock.Verify(n => n.CreateAndSendNotificationAsync(
+            userId,
+            "Mobile Recharge Completed",
+            It.Is<string>(msg => msg.Contains("01012345678") && msg.Contains("Vodafone")),
+            "Transaction",
+            result.ReferenceNumber,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

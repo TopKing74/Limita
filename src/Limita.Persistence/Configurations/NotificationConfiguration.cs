@@ -21,9 +21,20 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
             .HasMaxLength(1000)
             .IsRequired();
 
+        builder.Property(n => n.Type)
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(n => n.ReferenceId)
+            .HasMaxLength(100);
+
         builder.HasOne(n => n.User)
             .WithMany(u => u.Notifications)
             .HasForeignKey(n => n.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // High-performance composite indexes for user notification filtering and history queries
+        builder.HasIndex(n => new { n.UserId, n.IsRead });
+        builder.HasIndex(n => new { n.UserId, n.CreatedAt });
     }
 }

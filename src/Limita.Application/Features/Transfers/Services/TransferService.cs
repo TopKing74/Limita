@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
+using Limita.Application.Features.Notifications.Services;
 using Limita.Application.Features.Transfers.Models;
 using Limita.Domain.Entities;
 using Limita.Domain.Enums;
@@ -13,10 +15,17 @@ namespace Limita.Application.Features.Transfers.Services;
 public class TransferService : ITransferService
 {
     private readonly IApplicationDbContext _context;
+    private readonly INotificationService? _notificationService;
+    private readonly ILogger<TransferService>? _logger;
 
-    public TransferService(IApplicationDbContext context)
+    public TransferService(
+        IApplicationDbContext context,
+        INotificationService? notificationService = null,
+        ILogger<TransferService>? logger = null)
     {
         _context = context;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -194,78 +203,124 @@ public class TransferService : ITransferService
         }
 
         // 5. ATOMIC FINANCIAL EXECUTION (wrapped with ExecutionStrategy for resilient retry compatibility)
-        var strategy = _context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        var creditReference = $"{transfer.Transaction?.ReferenceNumber ?? transfer.Id.ToString("N")[..8]}-IN";
+
+        async Task<ApiResponse<ConfirmTransferResponseDto>> ExecuteConfirmTransferCoreAsync()
         {
-            await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            // Debit sender
+            transfer.SourceAccount.Balance -= totalRequired;
+
+            // Credit recipient
+            transfer.DestinationAccount.Balance += transfer.Amount;
+
+            // Mark sender transaction as Completed
+            if (transfer.Transaction != null)
+            {
+                transfer.Transaction.Status = TransactionStatus.Completed;
+            }
+
+            // Create credit ledger entry for recipient (double-entry bookkeeping)
+            var recipientTransaction = new Transaction
+            {
+                AccountId = transfer.DestinationAccount.Id,
+                ReferenceNumber = creditReference,
+                Type = TransactionType.TransferIn,
+                Amount = transfer.Amount,
+                Currency = transfer.DestinationAccount.Currency,
+                Status = TransactionStatus.Completed,
+                Description = $"Transfer from {transfer.SourceAccount.AccountNumber}"
+            };
+
+            _context.Transactions.Add(recipientTransaction);
+
+            // Mark transfer as Completed
+            transfer.Status = TransferStatus.Completed;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            var recipientName = transfer.DestinationAccount.User != null && !string.IsNullOrWhiteSpace(transfer.DestinationAccount.User.FullName)
+                ? transfer.DestinationAccount.User.FullName
+                : "Limita Bank Customer";
+
+            var responseDto = new ConfirmTransferResponseDto(
+                TransferId: transfer.Id,
+                TransactionId: transfer.TransactionId,
+                ReferenceNumber: transfer.Transaction?.ReferenceNumber ?? creditReference,
+                SourceAccountNumber: transfer.SourceAccount.AccountNumber,
+                DestinationAccountNumber: transfer.DestinationAccount.AccountNumber,
+                RecipientName: recipientName,
+                TransferredAmount: transfer.Amount,
+                Fee: fee,
+                TotalDeducted: totalRequired,
+                RemainingBalance: transfer.SourceAccount.Balance,
+                Currency: transfer.SourceAccount.Currency,
+                Status: TransferStatus.Completed,
+                ExecutedAt: DateTime.UtcNow,
+                Message: "Transfer has been executed and completed successfully.");
+
+            return ApiResponse<ConfirmTransferResponseDto>.Ok(responseDto, "Transfer confirmed and executed successfully.");
+        }
+
+        ApiResponse<ConfirmTransferResponseDto> response;
+        if (_context.Database == null)
+        {
+            response = await ExecuteConfirmTransferCoreAsync();
+        }
+        else
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+            response = await strategy.ExecuteAsync(async () =>
+            {
+                await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    var res = await ExecuteConfirmTransferCoreAsync();
+                    await dbTransaction.CommitAsync(cancellationToken);
+                    return res;
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    await dbTransaction.RollbackAsync(cancellationToken);
+                    return ApiResponse<ConfirmTransferResponseDto>.Fail("A concurrent transaction modified the account balance. Please try again.");
+                }
+                catch
+                {
+                    await dbTransaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
+        }
+
+        if (response.Success && _notificationService != null)
+        {
             try
             {
-                // Debit sender
-                transfer.SourceAccount.Balance -= totalRequired;
+                var senderRef = transfer.Transaction?.ReferenceNumber ?? creditReference;
+                // Debit notification for sender
+                await _notificationService.CreateAndSendNotificationAsync(
+                    transfer.SourceAccount.UserId,
+                    "Transfer Sent",
+                    $"You transferred {transfer.Amount:N2} {transfer.SourceAccount.Currency} to account {transfer.DestinationAccount.AccountNumber}.",
+                    "Transaction",
+                    senderRef,
+                    cancellationToken);
 
-                // Credit recipient
-                transfer.DestinationAccount.Balance += transfer.Amount;
-
-                // Mark sender transaction as Completed
-                if (transfer.Transaction != null)
-                {
-                    transfer.Transaction.Status = TransactionStatus.Completed;
-                }
-
-                // Create credit ledger entry for recipient (double-entry bookkeeping)
-                var creditReference = $"{transfer.Transaction?.ReferenceNumber ?? transfer.Id.ToString("N")[..8]}-IN";
-                var recipientTransaction = new Transaction
-                {
-                    AccountId = transfer.DestinationAccount.Id,
-                    ReferenceNumber = creditReference,
-                    Type = TransactionType.TransferIn,
-                    Amount = transfer.Amount,
-                    Currency = transfer.DestinationAccount.Currency,
-                    Status = TransactionStatus.Completed,
-                    Description = $"Transfer from {transfer.SourceAccount.AccountNumber}"
-                };
-
-                _context.Transactions.Add(recipientTransaction);
-
-                // Mark transfer as Completed
-                transfer.Status = TransferStatus.Completed;
-
-                await _context.SaveChangesAsync(cancellationToken);
-                await dbTransaction.CommitAsync(cancellationToken);
-
-                var recipientName = transfer.DestinationAccount.User != null && !string.IsNullOrWhiteSpace(transfer.DestinationAccount.User.FullName)
-                    ? transfer.DestinationAccount.User.FullName
-                    : "Limita Bank Customer";
-
-                var responseDto = new ConfirmTransferResponseDto(
-                    TransferId: transfer.Id,
-                    TransactionId: transfer.TransactionId,
-                    ReferenceNumber: transfer.Transaction?.ReferenceNumber ?? creditReference,
-                    SourceAccountNumber: transfer.SourceAccount.AccountNumber,
-                    DestinationAccountNumber: transfer.DestinationAccount.AccountNumber,
-                    RecipientName: recipientName,
-                    TransferredAmount: transfer.Amount,
-                    Fee: fee,
-                    TotalDeducted: totalRequired,
-                    RemainingBalance: transfer.SourceAccount.Balance,
-                    Currency: transfer.SourceAccount.Currency,
-                    Status: TransferStatus.Completed,
-                    ExecutedAt: DateTime.UtcNow,
-                    Message: "Transfer has been executed and completed successfully.");
-
-                return ApiResponse<ConfirmTransferResponseDto>.Ok(responseDto, "Transfer confirmed and executed successfully.");
+                // Credit notification for recipient
+                await _notificationService.CreateAndSendNotificationAsync(
+                    transfer.DestinationAccount.UserId,
+                    "Transfer Received",
+                    $"You received {transfer.Amount:N2} {transfer.DestinationAccount.Currency} from account {transfer.SourceAccount.AccountNumber}.",
+                    "Transaction",
+                    creditReference,
+                    cancellationToken);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                await dbTransaction.RollbackAsync(cancellationToken);
-                return ApiResponse<ConfirmTransferResponseDto>.Fail("A concurrent transaction modified the account balance. Please try again.");
+                _logger?.LogWarning(ex, "Failed to send notifications for transfer {TransferId}", transfer.Id);
             }
-            catch
-            {
-                await dbTransaction.RollbackAsync(cancellationToken);
-                throw;
-            }
-        });
+        }
+
+        return response;
     }
 
     /// <inheritdoc />

@@ -24,7 +24,7 @@ public class LimitaDbContext : IdentityDbContext<ApplicationUser>, IApplicationD
     public DbSet<MobileRecharge> MobileRecharges => Set<MobileRecharge>();
     public DbSet<Withdrawal> Withdrawals => Set<Withdrawal>();
     public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
-    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Notification> Notifications { get; set; } = null!;
 
     public override DatabaseFacade Database => base.Database;
 

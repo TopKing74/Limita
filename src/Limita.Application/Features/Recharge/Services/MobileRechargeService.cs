@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Limita.Application.Common.Interfaces;
+using Limita.Application.Features.Notifications.Services;
 using Limita.Application.Features.Recharge.Models;
 using Limita.Domain.Entities;
 using Limita.Domain.Enums;
@@ -9,10 +11,17 @@ namespace Limita.Application.Features.Recharge.Services;
 public class MobileRechargeService : IMobileRechargeService
 {
     private readonly IApplicationDbContext _context;
+    private readonly INotificationService? _notificationService;
+    private readonly ILogger<MobileRechargeService>? _logger;
 
-    public MobileRechargeService(IApplicationDbContext context)
+    public MobileRechargeService(
+        IApplicationDbContext context,
+        INotificationService? notificationService = null,
+        ILogger<MobileRechargeService>? logger = null)
     {
         _context = context;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<MobileRechargeResponseDto> RechargeMobileAsync(
@@ -93,26 +102,49 @@ public class MobileRechargeService : IMobileRechargeService
                 recharge.CreatedAt);
         }
 
+        MobileRechargeResponseDto result;
         if (_context.Database == null)
         {
-            return await ExecuteRechargeCoreAsync();
+            result = await ExecuteRechargeCoreAsync();
+        }
+        else
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+            result = await strategy.ExecuteAsync(async () =>
+            {
+                await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    var res = await ExecuteRechargeCoreAsync();
+                    await dbTransaction.CommitAsync(cancellationToken);
+                    return res;
+                }
+                catch
+                {
+                    await dbTransaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
         }
 
-        var strategy = _context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        if (_notificationService != null)
         {
-            await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                var result = await ExecuteRechargeCoreAsync();
-                await dbTransaction.CommitAsync(cancellationToken);
-                return result;
+                await _notificationService.CreateAndSendNotificationAsync(
+                    userId,
+                    "Mobile Recharge Completed",
+                    $"Recharge of {result.Amount:N2} for mobile number {result.PhoneNumber} ({result.Operator}) was completed successfully.",
+                    "Transaction",
+                    result.ReferenceNumber,
+                    cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
-                await dbTransaction.RollbackAsync(cancellationToken);
-                throw;
+                _logger?.LogWarning(ex, "Failed to send notification for mobile recharge {RechargeId}", result.Id);
             }
-        });
+        }
+
+        return result;
     }
 }

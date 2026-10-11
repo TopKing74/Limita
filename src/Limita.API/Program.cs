@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Limita.API.Extensions;
 using Limita.API.Middlewares;
+using Limita.Infrastructure.Hubs;
 using Limita.Persistence.Context;
 using Limita.Persistence.Seed;
 
@@ -41,8 +42,9 @@ app.UseCors("LimitaCorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 6. Map Controllers
+// 6. Map Controllers and Hubs
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 // 7. Automatic Database Migration and Seed Execution on Startup
 using (var scope = app.Services.CreateScope())

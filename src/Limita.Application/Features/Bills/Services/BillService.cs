@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Bills.Models;
+using Limita.Application.Features.Notifications.Services;
 using Limita.Domain.Entities;
 using Limita.Domain.Enums;
 
@@ -9,10 +11,17 @@ namespace Limita.Application.Features.Bills.Services;
 public class BillService : IBillService
 {
     private readonly IApplicationDbContext _context;
+    private readonly INotificationService? _notificationService;
+    private readonly ILogger<BillService>? _logger;
 
-    public BillService(IApplicationDbContext context)
+    public BillService(
+        IApplicationDbContext context,
+        INotificationService? notificationService = null,
+        ILogger<BillService>? logger = null)
     {
         _context = context;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<BillDto> CreateBillAsync(string userId, CreateBillRequest request, CancellationToken cancellationToken = default)
@@ -149,26 +158,49 @@ public class BillService : IBillService
             );
         }
 
+        BillPaymentResponseDto result;
         if (_context.Database == null)
         {
-            return await ExecutePayBillCoreAsync();
+            result = await ExecutePayBillCoreAsync();
+        }
+        else
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+            result = await strategy.ExecuteAsync(async () =>
+            {
+                await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    var res = await ExecutePayBillCoreAsync();
+                    await dbTransaction.CommitAsync(cancellationToken);
+                    return res;
+                }
+                catch
+                {
+                    await dbTransaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
         }
 
-        var strategy = _context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        if (_notificationService != null)
         {
-            await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                var result = await ExecutePayBillCoreAsync();
-                await dbTransaction.CommitAsync(cancellationToken);
-                return result;
+                await _notificationService.CreateAndSendNotificationAsync(
+                    userId,
+                    "Bill Paid",
+                    $"Payment of {bill.Amount:N2} {account.Currency} for bill {bill.BillingNumber} was completed successfully.",
+                    "Transaction",
+                    result.ReferenceNumber,
+                    cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
-                await dbTransaction.RollbackAsync(cancellationToken);
-                throw;
+                _logger?.LogWarning(ex, "Failed to send notification for bill payment {BillId}", bill.Id);
             }
-        });
+        }
+
+        return result;
     }
 }
