@@ -19,6 +19,7 @@ using Limita.Application.Features.Cards.Services;
 using Limita.Application.Features.Exchange.Services;
 using Limita.Application.Features.Recharge.Services;
 using Limita.Application.Features.Notifications.Services;
+using Limita.Application.Features.Limits.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Email;
@@ -206,8 +207,12 @@ public static class ServiceCollectionExtensions
         services.AddSignalR();
         services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         services.AddScoped<INotificationService, NotificationService>();
+<<<<<<< HEAD
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IExchangeService, ExchangeService>();
+=======
+        services.AddScoped<ILimitService, LimitService>();
+>>>>>>> 52c0b0a5599163053bc652855c7d4404962c6371
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;

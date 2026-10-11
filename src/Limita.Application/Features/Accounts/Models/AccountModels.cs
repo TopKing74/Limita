@@ -25,7 +25,8 @@ public record AccountDetailsDto(
     decimal DailyLimit,
     decimal MonthlyLimit,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    decimal PerTransactionLimit = 50000m);
 
 public record AccountBalanceDto(
     Guid AccountId,
