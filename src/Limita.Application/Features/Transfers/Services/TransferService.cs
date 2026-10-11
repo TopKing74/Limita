@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
@@ -225,58 +226,165 @@ public class TransferService : ITransferService
 
         async Task<ApiResponse<ConfirmTransferResponseDto>> ExecuteConfirmTransferCoreAsync()
         {
-            // Debit sender
-            transfer.SourceAccount.Balance -= totalRequired;
+            _context.ChangeTracker?.Clear();
 
-            // Credit recipient
-            transfer.DestinationAccount.Balance += transfer.Amount;
+            // Re-load fresh transfer inside transaction / retry delegate to guarantee clean state
+            var currentTransfer = await _context.Transfers
+                .Include(t => t.SourceAccount)
+                    .ThenInclude(sa => sa!.User)
+                .Include(t => t.DestinationAccount)
+                    .ThenInclude(da => da!.User)
+                .Include(t => t.Transaction)
+                .FirstOrDefaultAsync(t => t.Id == transferId, cancellationToken);
 
-            // Mark sender transaction as Completed
-            if (transfer.Transaction != null)
+            if (currentTransfer == null || currentTransfer.SourceAccount == null || currentTransfer.DestinationAccount == null)
             {
-                transfer.Transaction.Status = TransactionStatus.Completed;
+                return ApiResponse<ConfirmTransferResponseDto>.Fail("Transfer request or associated accounts could not be found.");
             }
 
-            // Create credit ledger entry for recipient (double-entry bookkeeping)
-            var recipientTransaction = new Transaction
+            // Idempotent execution check: If already completed in a prior retry attempt, return success safely
+            if (currentTransfer.Status == TransferStatus.Completed)
             {
-                AccountId = transfer.DestinationAccount.Id,
-                ReferenceNumber = creditReference,
-                Type = TransactionType.TransferIn,
-                Amount = transfer.Amount,
-                Currency = transfer.DestinationAccount.Currency,
-                Status = TransactionStatus.Completed,
-                Description = $"Transfer from {transfer.SourceAccount.AccountNumber}"
-            };
+                var recipientName = currentTransfer.DestinationAccount.User != null && !string.IsNullOrWhiteSpace(currentTransfer.DestinationAccount.User.FullName)
+                    ? currentTransfer.DestinationAccount.User.FullName
+                    : "Limita Bank Customer";
 
-            _context.Transactions.Add(recipientTransaction);
+                var completedDto = new ConfirmTransferResponseDto(
+                    TransferId: currentTransfer.Id,
+                    TransactionId: currentTransfer.TransactionId,
+                    ReferenceNumber: currentTransfer.Transaction?.ReferenceNumber ?? creditReference,
+                    SourceAccountNumber: currentTransfer.SourceAccount.AccountNumber,
+                    DestinationAccountNumber: currentTransfer.DestinationAccount.AccountNumber,
+                    RecipientName: recipientName,
+                    TransferredAmount: currentTransfer.Amount,
+                    Fee: fee,
+                    TotalDeducted: totalRequired,
+                    RemainingBalance: currentTransfer.SourceAccount.Balance,
+                    Currency: currentTransfer.SourceAccount.Currency,
+                    Status: TransferStatus.Completed,
+                    ExecutedAt: DateTime.UtcNow,
+                    Message: "Transfer has been executed and completed successfully.");
 
-            // Mark transfer as Completed
-            transfer.Status = TransferStatus.Completed;
+                return ApiResponse<ConfirmTransferResponseDto>.Ok(completedDto, "Transfer confirmed and executed successfully.");
+            }
 
-            await _context.SaveChangesAsync(cancellationToken);
+            if (currentTransfer.Status != TransferStatus.Pending)
+            {
+                return ApiResponse<ConfirmTransferResponseDto>.Fail($"Transfer cannot be confirmed because it is in '{currentTransfer.Status}' state.");
+            }
 
-            var recipientName = transfer.DestinationAccount.User != null && !string.IsNullOrWhiteSpace(transfer.DestinationAccount.User.FullName)
-                ? transfer.DestinationAccount.User.FullName
-                : "Limita Bank Customer";
+            if (currentTransfer.SourceAccount.Balance < totalRequired)
+            {
+                return ApiResponse<ConfirmTransferResponseDto>.Fail($"Insufficient balance to confirm transfer. Available balance is {currentTransfer.SourceAccount.Balance:N2} {currentTransfer.SourceAccount.Currency}, required is {totalRequired:N2} {currentTransfer.SourceAccount.Currency}.");
+            }
 
-            var responseDto = new ConfirmTransferResponseDto(
-                TransferId: transfer.Id,
-                TransactionId: transfer.TransactionId,
-                ReferenceNumber: transfer.Transaction?.ReferenceNumber ?? creditReference,
-                SourceAccountNumber: transfer.SourceAccount.AccountNumber,
-                DestinationAccountNumber: transfer.DestinationAccount.AccountNumber,
-                RecipientName: recipientName,
-                TransferredAmount: transfer.Amount,
-                Fee: fee,
-                TotalDeducted: totalRequired,
-                RemainingBalance: transfer.SourceAccount.Balance,
-                Currency: transfer.SourceAccount.Currency,
-                Status: TransferStatus.Completed,
-                ExecutedAt: DateTime.UtcNow,
-                Message: "Transfer has been executed and completed successfully.");
+            var freshLimitCheck = await _limitService.ValidateDebitLimitAsync(currentTransfer.SourceAccount.Id, currentTransfer.Amount, cancellationToken);
+            if (!freshLimitCheck.IsAllowed)
+            {
+                return ApiResponse<ConfirmTransferResponseDto>.Fail(freshLimitCheck.ErrorMessage ?? "Transfer cannot be confirmed due to account limits.");
+            }
 
-            return ApiResponse<ConfirmTransferResponseDto>.Ok(responseDto, "Transfer confirmed and executed successfully.");
+            IDbContextTransaction? dbTransaction = null;
+            if (_context.Database != null)
+            {
+                dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            }
+            else
+            {
+                dbTransaction = await _context.BeginTransactionAsync(cancellationToken);
+            }
+
+            try
+            {
+                // Debit sender
+                currentTransfer.SourceAccount.Balance -= totalRequired;
+
+                // Credit recipient
+                currentTransfer.DestinationAccount.Balance += currentTransfer.Amount;
+
+                // Mark sender transaction as Completed
+                if (currentTransfer.Transaction != null)
+                {
+                    currentTransfer.Transaction.Status = TransactionStatus.Completed;
+                }
+
+                // Check if recipient transaction already exists before creating to prevent duplicate ledger rows
+                var existingRecipientTx = await _context.Transactions
+                    .FirstOrDefaultAsync(t => t.ReferenceNumber == creditReference, cancellationToken);
+
+                if (existingRecipientTx == null)
+                {
+                    var recipientTransaction = new Transaction
+                    {
+                        AccountId = currentTransfer.DestinationAccount.Id,
+                        ReferenceNumber = creditReference,
+                        Type = TransactionType.TransferIn,
+                        Amount = currentTransfer.Amount,
+                        Currency = currentTransfer.DestinationAccount.Currency,
+                        Status = TransactionStatus.Completed,
+                        Description = $"Transfer from {currentTransfer.SourceAccount.AccountNumber}"
+                    };
+
+                    _context.Transactions.Add(recipientTransaction);
+                }
+
+                // Mark transfer as Completed
+                currentTransfer.Status = TransferStatus.Completed;
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                if (dbTransaction != null)
+                {
+                    await dbTransaction.CommitAsync(cancellationToken);
+                }
+
+                var recipientName = currentTransfer.DestinationAccount.User != null && !string.IsNullOrWhiteSpace(currentTransfer.DestinationAccount.User.FullName)
+                    ? currentTransfer.DestinationAccount.User.FullName
+                    : "Limita Bank Customer";
+
+                var responseDto = new ConfirmTransferResponseDto(
+                    TransferId: currentTransfer.Id,
+                    TransactionId: currentTransfer.TransactionId,
+                    ReferenceNumber: currentTransfer.Transaction?.ReferenceNumber ?? creditReference,
+                    SourceAccountNumber: currentTransfer.SourceAccount.AccountNumber,
+                    DestinationAccountNumber: currentTransfer.DestinationAccount.AccountNumber,
+                    RecipientName: recipientName,
+                    TransferredAmount: currentTransfer.Amount,
+                    Fee: fee,
+                    TotalDeducted: totalRequired,
+                    RemainingBalance: currentTransfer.SourceAccount.Balance,
+                    Currency: currentTransfer.SourceAccount.Currency,
+                    Status: TransferStatus.Completed,
+                    ExecutedAt: DateTime.UtcNow,
+                    Message: "Transfer has been executed and completed successfully.");
+
+                return ApiResponse<ConfirmTransferResponseDto>.Ok(responseDto, "Transfer confirmed and executed successfully.");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (dbTransaction != null)
+                {
+                    await dbTransaction.RollbackAsync(cancellationToken);
+                }
+                _context.ChangeTracker?.Clear();
+                return ApiResponse<ConfirmTransferResponseDto>.Fail("A concurrent transaction modified the account balance. Please try again.");
+            }
+            catch
+            {
+                if (dbTransaction != null)
+                {
+                    await dbTransaction.RollbackAsync(cancellationToken);
+                }
+                _context.ChangeTracker?.Clear();
+                throw;
+            }
+            finally
+            {
+                if (dbTransaction != null)
+                {
+                    await dbTransaction.DisposeAsync();
+                }
+            }
         }
 
         ApiResponse<ConfirmTransferResponseDto> response;
@@ -287,26 +395,7 @@ public class TransferService : ITransferService
         else
         {
             var strategy = _context.Database.CreateExecutionStrategy();
-            response = await strategy.ExecuteAsync(async () =>
-            {
-                await using var dbTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-                try
-                {
-                    var res = await ExecuteConfirmTransferCoreAsync();
-                    await dbTransaction.CommitAsync(cancellationToken);
-                    return res;
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    await dbTransaction.RollbackAsync(cancellationToken);
-                    return ApiResponse<ConfirmTransferResponseDto>.Fail("A concurrent transaction modified the account balance. Please try again.");
-                }
-                catch
-                {
-                    await dbTransaction.RollbackAsync(cancellationToken);
-                    throw;
-                }
-            });
+            response = await strategy.ExecuteAsync(async () => await ExecuteConfirmTransferCoreAsync());
         }
 
         if (response.Success && _notificationService != null)

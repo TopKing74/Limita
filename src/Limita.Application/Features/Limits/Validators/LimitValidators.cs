@@ -36,6 +36,8 @@ public class UpdateAccountLimitsRequestValidator : AbstractValidator<UpdateAccou
             .WithMessage("Per-transaction limit cannot exceed the daily limit.")
             .Must(x => !x.DailyLimit.HasValue || !x.MonthlyLimit.HasValue || x.DailyLimit <= x.MonthlyLimit)
             .WithMessage("Daily limit cannot exceed the monthly limit.")
+            .Must(x => !x.PerTransactionLimit.HasValue || !x.MonthlyLimit.HasValue || x.PerTransactionLimit <= x.MonthlyLimit)
+            .WithMessage("Per-transaction limit cannot exceed the monthly limit.")
             .Must(x => x.PerTransactionLimit.HasValue || x.DailyLimit.HasValue || x.MonthlyLimit.HasValue)
             .WithMessage("At least one limit field (PerTransactionLimit, DailyLimit, or MonthlyLimit) must be provided.");
     }

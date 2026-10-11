@@ -221,12 +221,14 @@ public class TransactionService : ITransactionService
                 {
                     case TransactionType.Deposit:
                     case TransactionType.TransferIn:
+                    case TransactionType.ExchangeIn:
                         inflow += tx.Amount;
                         break;
                     case TransactionType.Withdrawal:
                     case TransactionType.TransferOut:
                     case TransactionType.BillPayment:
                     case TransactionType.MobileRecharge:
+                    case TransactionType.ExchangeOut:
                         outflow += tx.Amount;
                         break;
                 }

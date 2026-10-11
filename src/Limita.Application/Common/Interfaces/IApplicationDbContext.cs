@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Limita.Domain.Entities;
 
 namespace Limita.Application.Common.Interfaces;
@@ -20,6 +22,9 @@ public interface IApplicationDbContext
     DbSet<Notification> Notifications { get; }
 
     DatabaseFacade Database { get; }
+    ChangeTracker ChangeTracker { get; }
+
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

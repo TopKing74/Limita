@@ -239,4 +239,111 @@ public class LimitServiceTests
         result.Success.Should().BeFalse();
         result.Message.Should().Contain("Daily transfer limit exceeded");
     }
+
+    [Fact]
+    public async Task UpdateAccountLimitsAsync_ShouldFail_WhenPartialUpdateCausesMonthlyLimitToBeLessThanExistingDailyLimit()
+    {
+        // Arrange
+        var userId = "test-user-partial-limits";
+        var accountId = Guid.NewGuid();
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            AccountNumber = "1000100010",
+            Currency = "EGP",
+            Status = AccountStatus.Active,
+            PerTransactionLimit = 5000m,
+            DailyLimit = 20000m,
+            MonthlyLimit = 100000m
+        };
+
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+
+        // Act: User only updates MonthlyLimit to 15,000 (which is less than existing DailyLimit of 20,000)
+        var request = new UpdateAccountLimitsRequest(
+            PerTransactionLimit: null,
+            DailyLimit: null,
+            MonthlyLimit: 15000m);
+
+        var response = await _limitService.UpdateAccountLimitsAsync(userId, accountId, request);
+
+        // Assert
+        response.Success.Should().BeFalse();
+        response.Message.Should().Contain("Daily limit");
+        response.Message.Should().Contain("cannot exceed monthly limit");
+        account.MonthlyLimit.Should().Be(100000m); // Unchanged
+    }
+
+    [Fact]
+    public async Task UpdateAccountLimitsAsync_ShouldFail_WhenPartialUpdateCausesPerTransactionLimitToExceedExistingDailyLimit()
+    {
+        // Arrange
+        var userId = "test-user-partial-limits";
+        var accountId = Guid.NewGuid();
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            AccountNumber = "1000100010",
+            Currency = "EGP",
+            Status = AccountStatus.Active,
+            PerTransactionLimit = 5000m,
+            DailyLimit = 20000m,
+            MonthlyLimit = 100000m
+        };
+
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+
+        // Act: User only updates PerTransactionLimit to 25,000 (which exceeds existing DailyLimit of 20,000)
+        var request = new UpdateAccountLimitsRequest(
+            PerTransactionLimit: 25000m,
+            DailyLimit: null,
+            MonthlyLimit: null);
+
+        var response = await _limitService.UpdateAccountLimitsAsync(userId, accountId, request);
+
+        // Assert
+        response.Success.Should().BeFalse();
+        response.Message.Should().Contain("Per-transaction limit");
+        response.Message.Should().Contain("cannot exceed daily limit");
+        account.PerTransactionLimit.Should().Be(5000m); // Unchanged
+    }
+
+    [Fact]
+    public async Task UpdateAccountLimitsAsync_ShouldSucceed_WhenPartialUpdateMaintainsValidMergedLimitsOrder()
+    {
+        // Arrange
+        var userId = "test-user-partial-limits";
+        var accountId = Guid.NewGuid();
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            AccountNumber = "1000100010",
+            Currency = "EGP",
+            Status = AccountStatus.Active,
+            PerTransactionLimit = 5000m,
+            DailyLimit = 20000m,
+            MonthlyLimit = 100000m
+        };
+
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(new List<Account> { account });
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(new List<Transaction>());
+
+        // Act: Partial update of DailyLimit to 30,000 (valid: 5,000 <= 30,000 <= 100,000)
+        var request = new UpdateAccountLimitsRequest(
+            PerTransactionLimit: null,
+            DailyLimit: 30000m,
+            MonthlyLimit: null);
+
+        var response = await _limitService.UpdateAccountLimitsAsync(userId, accountId, request);
+
+        // Assert
+        response.Success.Should().BeTrue();
+        account.PerTransactionLimit.Should().Be(5000m);
+        account.DailyLimit.Should().Be(30000m);
+        account.MonthlyLimit.Should().Be(100000m);
+        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

@@ -16,7 +16,8 @@ public class LimitService : ILimitService
         TransactionType.TransferOut,
         TransactionType.Withdrawal,
         TransactionType.BillPayment,
-        TransactionType.MobileRecharge
+        TransactionType.MobileRecharge,
+        TransactionType.ExchangeOut
     ];
 
     private readonly IApplicationDbContext _context;
@@ -198,20 +199,33 @@ public class LimitService : ILimitService
             return ApiResponse<AccountLimitsDto>.Fail("Cannot update limits on an inactive account.");
         }
 
-        if (request.PerTransactionLimit.HasValue)
+        // Compute merged final values (Incoming Values merged with Existing Stored Values)
+        var mergedPerTx = request.PerTransactionLimit ?? account.PerTransactionLimit;
+        var mergedDaily = request.DailyLimit ?? account.DailyLimit;
+        var mergedMonthly = request.MonthlyLimit ?? account.MonthlyLimit;
+
+        // Enforce business rule: PerTransactionLimit <= DailyLimit <= MonthlyLimit on the final merged state
+        if (mergedPerTx > mergedDaily)
         {
-            account.PerTransactionLimit = request.PerTransactionLimit.Value;
+            return ApiResponse<AccountLimitsDto>.Fail(
+                $"Per-transaction limit ({mergedPerTx:N2} {account.Currency}) cannot exceed daily limit ({mergedDaily:N2} {account.Currency}).");
         }
 
-        if (request.DailyLimit.HasValue)
+        if (mergedDaily > mergedMonthly)
         {
-            account.DailyLimit = request.DailyLimit.Value;
+            return ApiResponse<AccountLimitsDto>.Fail(
+                $"Daily limit ({mergedDaily:N2} {account.Currency}) cannot exceed monthly limit ({mergedMonthly:N2} {account.Currency}).");
         }
 
-        if (request.MonthlyLimit.HasValue)
+        if (mergedPerTx > mergedMonthly)
         {
-            account.MonthlyLimit = request.MonthlyLimit.Value;
+            return ApiResponse<AccountLimitsDto>.Fail(
+                $"Per-transaction limit ({mergedPerTx:N2} {account.Currency}) cannot exceed monthly limit ({mergedMonthly:N2} {account.Currency}).");
         }
+
+        account.PerTransactionLimit = mergedPerTx;
+        account.DailyLimit = mergedDaily;
+        account.MonthlyLimit = mergedMonthly;
 
         await _context.SaveChangesAsync(cancellationToken);
 

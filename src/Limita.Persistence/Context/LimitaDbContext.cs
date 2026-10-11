@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Limita.Application.Common.Interfaces;
 using Limita.Domain.Common;
 using Limita.Domain.Entities;
@@ -27,6 +28,9 @@ public class LimitaDbContext : IdentityDbContext<ApplicationUser>, IApplicationD
     public DbSet<Notification> Notifications { get; set; } = null!;
 
     public override DatabaseFacade Database => base.Database;
+
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        => Database.BeginTransactionAsync(cancellationToken);
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

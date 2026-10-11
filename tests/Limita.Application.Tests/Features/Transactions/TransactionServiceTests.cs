@@ -211,4 +211,54 @@ public class TransactionServiceTests
         result.TotalTransactionsCount.Should().Be(0);
         result.Currencies.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task GetTransactionsSummaryAsync_ShouldIncludeExchangeInAsInflowAndExchangeOutAsOutflow()
+    {
+        // Arrange
+        var userId = "user-fx-summary";
+        var accountId = Guid.NewGuid();
+
+        var accounts = new List<Account>
+        {
+            new() { Id = accountId, UserId = userId, Currency = "EGP" }
+        };
+
+        var transactions = new List<Transaction>
+        {
+            new()
+            {
+                AccountId = accountId,
+                Currency = "EGP",
+                Amount = 15000m,
+                Type = TransactionType.ExchangeIn,
+                Status = TransactionStatus.Completed
+            },
+            new()
+            {
+                AccountId = accountId,
+                Currency = "EGP",
+                Amount = 5000m,
+                Type = TransactionType.ExchangeOut,
+                Status = TransactionStatus.Completed
+            }
+        };
+
+        _contextMock.Setup(c => c.Accounts).ReturnsDbSet(accounts);
+        _contextMock.Setup(c => c.Transactions).ReturnsDbSet(transactions);
+
+        // Act
+        var result = await _transactionService.GetTransactionsSummaryAsync(userId, accountId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Currency.Should().Be("EGP");
+        result.TotalInflow.Should().Be(15000m);
+        result.TotalOutflow.Should().Be(5000m);
+        result.NetCashFlow.Should().Be(10000m);
+        result.TotalTransactionsCount.Should().Be(2);
+
+        result.Breakdown.Should().Contain(b => b.Type == TransactionType.ExchangeIn && b.TotalAmount == 15000m);
+        result.Breakdown.Should().Contain(b => b.Type == TransactionType.ExchangeOut && b.TotalAmount == 5000m);
+    }
 }
