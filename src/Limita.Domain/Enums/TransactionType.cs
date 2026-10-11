@@ -7,5 +7,7 @@ public enum TransactionType
     TransferIn = 3,
     TransferOut = 4,
     BillPayment = 5,
-    MobileRecharge = 6
+    MobileRecharge = 6,
+    ExchangeOut = 7,
+    ExchangeIn = 8
 }

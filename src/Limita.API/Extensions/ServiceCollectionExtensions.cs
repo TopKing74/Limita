@@ -16,6 +16,7 @@ using Limita.Application.Features.Transactions.Services;
 using Limita.Application.Features.Transfers.Services;
 using Limita.Application.Features.Bills.Services;
 using Limita.Application.Features.Cards.Services;
+using Limita.Application.Features.Exchange.Services;
 using Limita.Application.Features.Recharge.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
@@ -185,6 +186,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICardPinHasher, CardPinHasher>();
         services.AddScoped<IBillService, BillService>();
         services.AddScoped<IMobileRechargeService, MobileRechargeService>();
+        services.AddScoped<IExchangeService, ExchangeService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
