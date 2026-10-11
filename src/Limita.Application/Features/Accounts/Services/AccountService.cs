@@ -190,7 +190,8 @@ public class AccountService : IAccountService
             account.DailyLimit,
             account.MonthlyLimit,
             account.CreatedAt,
-            account.UpdatedAt);
+            account.UpdatedAt,
+            account.PerTransactionLimit);
 
     public async Task<TransactionDto> WithdrawAsync(
         string userId,

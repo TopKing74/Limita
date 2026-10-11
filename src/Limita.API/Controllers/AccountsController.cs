@@ -5,6 +5,8 @@ using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Accounts.Models;
 using Limita.Application.Features.Accounts.Services;
+using Limita.Application.Features.Limits.Models;
+using Limita.Application.Features.Limits.Services;
 
 namespace Limita.API.Controllers;
 
@@ -12,26 +14,32 @@ namespace Limita.API.Controllers;
 public class AccountsController : BaseApiController
 {
     private readonly IAccountService _accountService;
+    private readonly ILimitService _limitService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IValidator<CreateAccountRequest> _createAccountValidator;
     private readonly IValidator<WithdrawalRequest> _withdrawalRequestValidator;
     private readonly IValidator<RechargeRequest> _rechargeRequestValidator;
     private readonly IValidator<DepositRequest> _depositRequestValidator;
+    private readonly IValidator<UpdateAccountLimitsRequest> _updateLimitsValidator;
 
     public AccountsController(
         IAccountService accountService,
+        ILimitService limitService,
         ICurrentUserService currentUserService,
         IValidator<CreateAccountRequest> createAccountValidator,
         IValidator<WithdrawalRequest> withdrawalRequestValidator,
         IValidator<RechargeRequest> rechargeRequestValidator,
-        IValidator<DepositRequest> depositRequestValidator)
+        IValidator<DepositRequest> depositRequestValidator,
+        IValidator<UpdateAccountLimitsRequest> updateLimitsValidator)
     {
         _accountService = accountService;
+        _limitService = limitService;
         _currentUserService = currentUserService;
         _createAccountValidator = createAccountValidator;
         _withdrawalRequestValidator = withdrawalRequestValidator;
         _rechargeRequestValidator = rechargeRequestValidator;
         _depositRequestValidator = depositRequestValidator;
+        _updateLimitsValidator = updateLimitsValidator;
     }
 
     /// <summary>
@@ -225,6 +233,74 @@ public class AccountsController : BaseApiController
 
         var transaction = await _accountService.RechargeAsync(userId, id, request, cancellationToken);
         return Ok(ApiResponse<TransactionDto>.Ok(transaction, "Recharge successful."));
+    }
+
+    /// <summary>
+    /// Retrieve real-time per-transaction, daily, and monthly limits with current usage and remaining allowance.
+    /// </summary>
+    /// <param name="id">Account GUID identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Current account limit metrics and remaining allowances.</returns>
+    [HttpGet("{id:guid}/limits")]
+    [ProducesResponseType(typeof(ApiResponse<AccountLimitsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AccountLimitsDto>>> GetAccountLimits(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var result = await _limitService.GetAccountLimitsAsync(userId, id, cancellationToken);
+        if (!result.Success)
+        {
+            return NotFound(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Update custom per-transaction, daily, or monthly limits for an owned account.
+    /// </summary>
+    /// <param name="id">Account GUID identifier.</param>
+    /// <param name="request">Limit update payload.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Updated account limits details.</returns>
+    [HttpPut("{id:guid}/limits")]
+    [ProducesResponseType(typeof(ApiResponse<AccountLimitsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AccountLimitsDto>>> UpdateAccountLimits(
+        Guid id,
+        [FromBody] UpdateAccountLimitsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var validationResult = await _updateLimitsValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var result = await _limitService.UpdateAccountLimitsAsync(userId, id, request, cancellationToken);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
     }
 
     private string? GetRequiredUserId() =>

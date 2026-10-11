@@ -13,6 +13,7 @@ public class Account : BaseEntity
     public string Currency { get; set; } = "EGP";
     public decimal Balance { get; set; }
     public AccountStatus Status { get; set; } = AccountStatus.Active;
+    public decimal PerTransactionLimit { get; set; } = 50000m;
     public decimal DailyLimit { get; set; } = 50000m;
     public decimal MonthlyLimit { get; set; } = 250000m;
     public byte[] RowVersion { get; set; } = [];

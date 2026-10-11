@@ -18,6 +18,7 @@ using Limita.Application.Features.Bills.Services;
 using Limita.Application.Features.Cards.Services;
 using Limita.Application.Features.Recharge.Services;
 using Limita.Application.Features.Notifications.Services;
+using Limita.Application.Features.Limits.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
 using Limita.Infrastructure.Hubs;
@@ -203,6 +204,7 @@ public static class ServiceCollectionExtensions
         services.AddSignalR();
         services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ILimitService, LimitService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;

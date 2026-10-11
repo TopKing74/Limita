@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
+using Limita.Application.Features.Limits.Services;
 using Limita.Application.Features.Notifications.Services;
 using Limita.Application.Features.Transfers.Models;
 using Limita.Domain.Entities;
@@ -15,17 +16,20 @@ namespace Limita.Application.Features.Transfers.Services;
 public class TransferService : ITransferService
 {
     private readonly IApplicationDbContext _context;
+    private readonly ILimitService _limitService;
     private readonly INotificationService? _notificationService;
     private readonly ILogger<TransferService>? _logger;
 
     public TransferService(
         IApplicationDbContext context,
         INotificationService? notificationService = null,
-        ILogger<TransferService>? logger = null)
+        ILogger<TransferService>? logger = null,
+        ILimitService? limitService = null)
     {
         _context = context;
         _notificationService = notificationService;
         _logger = logger;
+        _limitService = limitService ?? new LimitService(context);
     }
 
     /// <inheritdoc />
@@ -85,6 +89,13 @@ public class TransferService : ITransferService
         if (sourceAccount.Balance < totalRequired)
         {
             return ApiResponse<TransferResponseDto>.Fail($"Insufficient balance. Your available balance is {sourceAccount.Balance:N2} {sourceAccount.Currency}, but total required is {totalRequired:N2} {sourceAccount.Currency}.");
+        }
+
+        // 8. Enforce per-transaction, daily velocity, and monthly limits
+        var limitCheck = await _limitService.ValidateDebitLimitAsync(sourceAccount.Id, request.Amount, cancellationToken);
+        if (!limitCheck.IsAllowed)
+        {
+            return ApiResponse<TransferResponseDto>.Fail(limitCheck.ErrorMessage ?? "Transfer rejected due to account limits.");
         }
 
         // 8. Generate unique bank reference code
@@ -200,6 +211,13 @@ public class TransferService : ITransferService
         if (transfer.SourceAccount.Balance < totalRequired)
         {
             return ApiResponse<ConfirmTransferResponseDto>.Fail($"Insufficient balance to confirm transfer. Available balance is {transfer.SourceAccount.Balance:N2} {transfer.SourceAccount.Currency}, required is {totalRequired:N2} {transfer.SourceAccount.Currency}.");
+        }
+
+        // 5. Re-check limits immediately before debiting
+        var limitCheck = await _limitService.ValidateDebitLimitAsync(transfer.SourceAccount.Id, transfer.Amount, cancellationToken);
+        if (!limitCheck.IsAllowed)
+        {
+            return ApiResponse<ConfirmTransferResponseDto>.Fail(limitCheck.ErrorMessage ?? "Transfer cannot be confirmed due to account limits.");
         }
 
         // 5. ATOMIC FINANCIAL EXECUTION (wrapped with ExecutionStrategy for resilient retry compatibility)

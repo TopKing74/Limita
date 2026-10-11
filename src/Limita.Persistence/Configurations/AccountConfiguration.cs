@@ -27,6 +27,9 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.Balance)
             .HasPrecision(18, 2);
 
+        builder.Property(a => a.PerTransactionLimit)
+            .HasPrecision(18, 2);
+
         builder.Property(a => a.DailyLimit)
             .HasPrecision(18, 2);
 
