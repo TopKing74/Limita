@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
 using Limita.Application.Features.Auth.Models;
@@ -22,6 +24,10 @@ public class AuthController : BaseApiController
     private readonly IValidator<RegisterRequest> _registerValidator;
     private readonly IAuthService _authService;
     private readonly IValidator<LogoutRequest> _logoutValidator;
+    private readonly IValidator<ChangePasswordRequestDto> _changePasswordValidator;
+    private readonly IValidator<ForgotPasswordRequestDto> _forgotPasswordValidator;
+    private readonly IValidator<ResetPasswordRequestDto> _resetPasswordValidator;
+    private readonly IHostEnvironment _environment;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
@@ -32,7 +38,11 @@ public class AuthController : BaseApiController
         IValidator<LoginRequest> loginValidator,
         IValidator<RegisterRequest> registerValidator,
         IAuthService authService,
-        IValidator<LogoutRequest> logoutValidator)
+        IValidator<LogoutRequest> logoutValidator,
+        IValidator<ChangePasswordRequestDto> changePasswordValidator,
+        IValidator<ForgotPasswordRequestDto> forgotPasswordValidator,
+        IValidator<ResetPasswordRequestDto> resetPasswordValidator,
+        IHostEnvironment environment)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -43,6 +53,10 @@ public class AuthController : BaseApiController
         _registerValidator = registerValidator;
         _authService = authService;
         _logoutValidator = logoutValidator;
+        _changePasswordValidator = changePasswordValidator;
+        _forgotPasswordValidator = forgotPasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
+        _environment = environment;
     }
 
     [HttpPost("login")]
@@ -270,5 +284,93 @@ public class AuthController : BaseApiController
         };
 
         return Ok(ApiResponse<object>.Ok(data, "Current user profile fetched successfully."));
+    }
+
+    /// <summary>
+    /// Change password for authenticated user.
+    /// </summary>
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse>> ChangePassword(
+        [FromBody] ChangePasswordRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _changePasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value
+            ?? _currentUserService.UserId;
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse.Fail("User is not authenticated."));
+        }
+
+        var result = await _authService.ChangePasswordAsync(userId, request, cancellationToken);
+        if (!result.Succeeded)
+        {
+            return BadRequest(ApiResponse.Fail(result.Message ?? "Failed to change password.", result.Errors));
+        }
+
+        return Ok(ApiResponse.Ok(result.Message ?? "Password changed successfully."));
+    }
+
+    /// <summary>
+    /// Request password reset token via email.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<string>>> ForgotPassword(
+        [FromBody] ForgotPasswordRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _forgotPasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var result = await _authService.ForgotPasswordAsync(request, cancellationToken);
+
+        // Security best practice: Never expose reset token in API response; generic message only
+        return Ok(ApiResponse<string?>.Ok(null, result.Message ?? "If this email is registered, a password reset link/code has been sent."));
+    }
+
+    /// <summary>
+    /// Reset password using the received 6-digit OTP verification code.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse>> ResetPassword(
+        [FromBody] ResetPasswordRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _resetPasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse.Fail("Validation failed.", errors));
+        }
+
+        var result = await _authService.ResetPasswordAsync(request, cancellationToken);
+        if (!result.Succeeded)
+        {
+            return BadRequest(ApiResponse.Fail(result.Message ?? "Failed to reset password.", result.Errors));
+        }
+
+        return Ok(ApiResponse.Ok(result.Message ?? "Password has been reset successfully."));
     }
 }

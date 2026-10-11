@@ -20,6 +20,7 @@ using Limita.Application.Features.Recharge.Services;
 using Limita.Application.Features.Notifications.Services;
 using Limita.Domain.Entities;
 using Limita.Infrastructure.Authentication;
+using Limita.Infrastructure.Email;
 using Limita.Infrastructure.Hubs;
 using Limita.Infrastructure.Identity;
 using Limita.Infrastructure.Notifications;
@@ -188,6 +189,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationDependencies(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAccountService, AccountService>();
@@ -203,6 +205,7 @@ public static class ServiceCollectionExtensions
         services.AddSignalR();
         services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IEmailService, EmailService>();
         services.AddValidatorsFromAssembly(typeof(ApiResponse<>).Assembly);
 
         return services;
