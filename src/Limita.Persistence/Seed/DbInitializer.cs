@@ -75,18 +75,37 @@ public static class DbInitializer
             }
         }
 
-        // 3. Default Currencies / Exchange Rates
-        if (!await context.ExchangeRates.AnyAsync())
+        // 3. Default Currencies / Exchange Rates (idempotent — insert any missing pairs)
+        var demoRates = new (string From, string To, decimal Rate)[]
         {
-            var rates = new List<ExchangeRate>
-            {
-                new() { FromCurrency = "USD", ToCurrency = "EGP", Rate = 48.500000m, UpdatedAt = DateTime.UtcNow },
-                new() { FromCurrency = "EGP", ToCurrency = "USD", Rate = 0.020619m, UpdatedAt = DateTime.UtcNow },
-                new() { FromCurrency = "EUR", ToCurrency = "EGP", Rate = 52.800000m, UpdatedAt = DateTime.UtcNow },
-                new() { FromCurrency = "EGP", ToCurrency = "EUR", Rate = 0.018939m, UpdatedAt = DateTime.UtcNow }
-            };
+            ("USD", "EGP", 48.500000m),
+            ("EGP", "USD", 0.020619m),
+            ("EUR", "EGP", 52.800000m),
+            ("EGP", "EUR", 0.018939m),
+            ("USD", "EUR", 0.918561m),
+            ("EUR", "USD", 1.088660m)
+        };
 
-            await context.ExchangeRates.AddRangeAsync(rates);
+        var existingPairs = await context.ExchangeRates
+            .Select(r => new { r.FromCurrency, r.ToCurrency })
+            .ToListAsync();
+
+        var missingRates = demoRates
+            .Where(r => !existingPairs.Any(e =>
+                string.Equals(e.FromCurrency, r.From, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(e.ToCurrency, r.To, StringComparison.OrdinalIgnoreCase)))
+            .Select(r => new ExchangeRate
+            {
+                FromCurrency = r.From,
+                ToCurrency = r.To,
+                Rate = r.Rate,
+                UpdatedAt = DateTime.UtcNow
+            })
+            .ToList();
+
+        if (missingRates.Count > 0)
+        {
+            await context.ExchangeRates.AddRangeAsync(missingRates);
             await context.SaveChangesAsync();
         }
 
@@ -117,7 +136,19 @@ public static class DbInitializer
                 Status = AccountStatus.Active
             };
 
-            await context.Accounts.AddRangeAsync(egpAccount, usdAccount);
+            var eurAccount = new Account
+            {
+                UserId = demoUser.Id,
+                AccountNumber = "EU10002000300077",
+                Type = AccountType.Savings,
+                Currency = "EUR",
+                Balance = 3000.00m,
+                DailyLimit = 2000.00m,
+                MonthlyLimit = 10000.00m,
+                Status = AccountStatus.Active
+            };
+
+            await context.Accounts.AddRangeAsync(egpAccount, usdAccount, eurAccount);
             await context.SaveChangesAsync();
 
             // 5. Sample Cards
@@ -152,6 +183,23 @@ public static class DbInitializer
             };
 
             await context.BankCards.AddRangeAsync(debitCard, creditCard);
+            await context.SaveChangesAsync();
+        }
+        else if (demoUser != null &&
+                 !await context.Accounts.AnyAsync(a => a.UserId == demoUser.Id && a.Currency == "EUR"))
+        {
+            // Backfill EUR demo account for databases seeded before multi-currency exchange
+            await context.Accounts.AddAsync(new Account
+            {
+                UserId = demoUser.Id,
+                AccountNumber = "EU10002000300077",
+                Type = AccountType.Savings,
+                Currency = "EUR",
+                Balance = 3000.00m,
+                DailyLimit = 2000.00m,
+                MonthlyLimit = 10000.00m,
+                Status = AccountStatus.Active
+            });
             await context.SaveChangesAsync();
         }
 
