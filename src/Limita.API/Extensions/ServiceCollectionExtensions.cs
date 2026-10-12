@@ -34,13 +34,16 @@ namespace Limita.API.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddLimitaServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddLimitaServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment? environment = null)
     {
         services.AddDatabase(configuration);
         services.AddIdentityServices();
         services.AddJwtAuthentication(configuration);
         services.AddApplicationDependencies();
-        services.AddCorsPolicy();
+        services.AddCorsPolicy(environment);
         services.AddSwaggerDocumentation();
 
         return services;
@@ -215,10 +218,27 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCorsPolicy(this IServiceCollection services)
+    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IHostEnvironment? environment = null)
     {
         services.AddCors(options =>
         {
+            options.AddPolicy("DefaultCorsPolicy", builder =>
+            {
+                if (environment == null || environment.IsDevelopment())
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                }
+                else
+                {
+                    builder.WithOrigins("https://limita.bank", "https://app.limita.bank")
+                           .AllowAnyHeader()
+                           .AllowAnyMethod()
+                           .AllowCredentials();
+                }
+            });
+
             options.AddPolicy("LimitaCorsPolicy", builder =>
             {
                 builder.SetIsOriginAllowed(_ => true)

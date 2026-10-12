@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Hosting;
 using Limita.Application.Common;
 using Limita.Application.Common.Interfaces;
@@ -59,6 +60,7 @@ public class AuthController : BaseApiController
         _environment = environment;
     }
 
+    [EnableRateLimiting("AuthLimiter")]
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
@@ -96,6 +98,8 @@ public class AuthController : BaseApiController
         user.RefreshToken = refreshToken;
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);
+
+        SetRefreshTokenCookie(refreshToken);
 
         var authResponse = new AuthResponse(
             accessToken,
@@ -170,6 +174,8 @@ public class AuthController : BaseApiController
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);
 
+        SetRefreshTokenCookie(refreshToken);
+
         var authResponse = new AuthResponse(
             accessToken,
             refreshToken,
@@ -215,6 +221,8 @@ public class AuthController : BaseApiController
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);
 
+        SetRefreshTokenCookie(newRefreshToken);
+
         var authResponse = new AuthResponse(
             newAccessToken,
             newRefreshToken,
@@ -249,6 +257,8 @@ public class AuthController : BaseApiController
         {
             return BadRequest(ApiResponse.Fail("Invalid or not found refresh token."));
         }
+
+        RemoveRefreshTokenCookie();
 
         return Ok(ApiResponse.Ok("Logged out successfully."));
     }
@@ -326,6 +336,7 @@ public class AuthController : BaseApiController
     /// <summary>
     /// Request password reset token via email.
     /// </summary>
+    [EnableRateLimiting("AuthLimiter")]
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
@@ -350,6 +361,7 @@ public class AuthController : BaseApiController
     /// <summary>
     /// Reset password using the received 6-digit OTP verification code.
     /// </summary>
+    [EnableRateLimiting("AuthLimiter")]
     [AllowAnonymous]
     [HttpPost("reset-password")]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
@@ -372,5 +384,31 @@ public class AuthController : BaseApiController
         }
 
         return Ok(ApiResponse.Ok(result.Message ?? "Password has been reset successfully."));
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !_environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddDays(7)
+        };
+
+        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+    }
+
+    private void RemoveRefreshTokenCookie()
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !_environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddDays(-1)
+        };
+
+        Response.Cookies.Delete("refreshToken", cookieOptions);
     }
 }

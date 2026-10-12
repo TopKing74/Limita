@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Limita.API.Extensions;
 using Limita.API.Middlewares;
+using Limita.Application.Common;
 using Limita.Infrastructure.Hubs;
 using Limita.Persistence.Context;
 using Limita.Persistence.Seed;
@@ -16,15 +19,52 @@ builder.Services.AddControllers()
     });
 
 // 2. Add Limita Core, Persistence, Infrastructure, Identity, and Security Services
-builder.Services.AddLimitaServices(builder.Configuration);
+builder.Services.AddLimitaServices(builder.Configuration, builder.Environment);
+
+// 3. Register ASP.NET Core Built-in Rate Limiting Services
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter(policyName: "AuthLimiter", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+        var response = ApiResponse.Fail("Too many requests. Please try again later.");
+        await context.HttpContext.Response.WriteAsJsonAsync(response, cancellationToken: token);
+    };
+});
+
+// 4. Register ProblemDetails
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-// 3. Global Exception Handling Middleware
+// 5. Global Exception Handling Middleware
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+            var response = ApiResponse.Fail(
+                "An internal server error occurred while processing your request.",
+                new List<string> { "Please contact support if the issue persists." });
+            await context.Response.WriteAsJsonAsync(response);
+        });
+    });
+}
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// 4. Configure Swagger and API Documentation
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+// 6. Configure Swagger and API Documentation (strictly Development only)
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -36,13 +76,14 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     });
 }
 
-// 5. Middleware Pipeline
+// 7. Middleware Pipeline
 app.UseHttpsRedirection();
-app.UseCors("LimitaCorsPolicy");
+app.UseCors("DefaultCorsPolicy");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 6. Map Controllers and Hubs
+// 8. Map Controllers and Hubs
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 
