@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\Limita.Application\Limita.Application.csproj" />
@@ -19,6 +19,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>f3b89e92-72f2-44eb-906a-2e280740621d</UserSecretsId>
   </PropertyGroup>
 
 </Project>
