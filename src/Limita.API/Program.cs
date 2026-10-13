@@ -113,7 +113,11 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "An error occurred while migrating or seeding the database: {Message}", ex.Message);
+        logger.LogCritical(
+            ex,
+            "Database migration or seeding failed. The application cannot start.");
+
+        throw;
     }
 }
 
