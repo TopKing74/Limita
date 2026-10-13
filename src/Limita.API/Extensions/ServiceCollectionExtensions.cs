@@ -100,14 +100,13 @@ public static class ServiceCollectionExtensions
         var jwtSection = configuration.GetSection(JwtOptions.SectionName);
         services.Configure<JwtOptions>(jwtSection);
 
-        var jwtOptions = jwtSection.Get<JwtOptions>() ?? new JwtOptions
+        var jwtOptions = jwtSection.Get<JwtOptions>() 
+            ?? throw new InvalidOperationException("CRITICAL: JwtSettings section is missing in configuration.");
+
+        if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey) || jwtOptions.SecretKey.Length < 32)
         {
-            Issuer = "LimitaBankingServer",
-            Audience = "LimitaBankingClient",
-            SecretKey = "LimitaSuperSecretSecureKeyForBankingApplication2026!#*$",
-            ExpiryMinutes = 60,
-            RefreshTokenExpiryDays = 7
-        };
+            throw new InvalidOperationException("CRITICAL: JwtSettings:SecretKey is missing, empty, or too short (must be at least 32 characters).");
+        }
 
         var key = Encoding.UTF8.GetBytes(jwtOptions.SecretKey);
 
