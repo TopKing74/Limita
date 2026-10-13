@@ -29,7 +29,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=limita-db,1433;Database=LimitaDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True;
-      - JwtSettings__SecretKey=LimitaBankingSystemSuperSecureSecretKey2026!@#$%^
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:-LimitaBankingSystemSuperSecureSecretKey2026!@#$%^}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 15s
