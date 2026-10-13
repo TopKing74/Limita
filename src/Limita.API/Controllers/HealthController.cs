@@ -4,6 +4,8 @@ using Limita.Application.Common.Interfaces;
 
 namespace Limita.API.Controllers;
 
+[Route("health")]
+[Route("api/[controller]")]
 public class HealthController : BaseApiController
 {
     private readonly IApplicationDbContext _context;

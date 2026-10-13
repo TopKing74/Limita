@@ -1,0 +1,15 @@
+# Build and compilation outputs
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Source control & IDE configuration
+.git/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Docker Compose definition files
+docker-compose*.yml
